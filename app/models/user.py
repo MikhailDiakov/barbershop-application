@@ -15,18 +15,11 @@ class User(Base):
 
     role = relationship("Role", back_populates="users")
 
-    schedules = relationship(
-        "BarberSchedule", back_populates="barber", cascade="all, delete-orphan"
-    )
+    barber_profile = relationship("Barber", back_populates="user", uselist=False)
+
     appointments_as_client = relationship(
         "Appointment",
         foreign_keys="Appointment.client_id",
         back_populates="client",
-        cascade="all, delete-orphan",
-    )
-    appointments_as_barber = relationship(
-        "Appointment",
-        foreign_keys="Appointment.barber_id",
-        back_populates="barber",
         cascade="all, delete-orphan",
     )

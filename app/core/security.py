@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_session
 from app.core.config import settings
-from app.services.user_service import get_user_by_id
+from app.utils.queries import get_user_with_barber_profile_by_id
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 
@@ -51,8 +51,28 @@ async def get_current_user(
     if user_id is None:
         raise credentials_exception
 
-    user = await get_user_by_id(db, int(user_id))
+    user = await get_user_with_barber_profile_by_id(db, int(user_id))
     if user is None:
         raise credentials_exception
 
     return user
+
+
+async def get_current_user_info(
+    token: str = Depends(oauth2_scheme),
+):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    payload = decode_access_token(token)
+    if payload is None:
+        raise credentials_exception
+
+    user_id = payload.get("id")
+    role = payload.get("role")
+    if user_id is None or role is None:
+        raise credentials_exception
+
+    return {"id": user_id, "role": role}

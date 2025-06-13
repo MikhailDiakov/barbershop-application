@@ -8,10 +8,10 @@ class BarberSchedule(Base):
     __tablename__ = "barber_schedules"
 
     id = Column(Integer, primary_key=True, index=True)
-    barber_id = Column(Integer, ForeignKey("users.id"))
+    barber_id = Column(Integer, ForeignKey("barbers.id"))
     date = Column(Date, index=True)
     start_time = Column(Time)
     end_time = Column(Time)
     is_active = Column(Boolean, default=True)
 
-    barber = relationship("User", back_populates="schedules")
+    barber = relationship("Barber", back_populates="schedules")

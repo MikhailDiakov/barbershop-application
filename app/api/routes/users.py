@@ -10,17 +10,15 @@ from app.schemas.user import (
     PasswordResetConfirm,
     PasswordResetRequest,
     UserCreate,
-    UserPasswordUpdate,
-    UserPhoneUpdate,
+    UserProfileUpdate,
     UserRead,
 )
 from app.services.user_service import (
     authenticate_user,
-    change_user_password,
-    change_user_phone,
     confirm_password_reset,
     create_user,
     send_password_reset_code,
+    update_user_profile,
 )
 
 router = APIRouter()
@@ -42,47 +40,35 @@ async def login(
     db: AsyncSession = Depends(get_session),
 ):
     user = await authenticate_user(db, form_data.username, form_data.password)
-    access_token = create_access_token(data={"id": str(user.id)})
+    access_token = create_access_token(
+        data={"id": str(user.id), "role": str(user.role_id)}
+    )
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get("/me", response_model=UserRead)
+@router.get("/me", response_model=UserRead, response_model_exclude_none=True)
 async def get_my_user(
     current_user=Depends(get_current_user),
 ):
     return current_user
 
 
-@router.put("/me/change-phone", response_model=UserRead)
-async def change_phone(
-    phone_update: UserPhoneUpdate,
+@router.put("/me/update", response_model=UserRead)
+async def update_my_profile(
+    data: UserProfileUpdate,
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_session),
 ):
     try:
-        user = await change_user_phone(
+        user = await update_user_profile(
             db=db,
             user_id=current_user.id,
-            new_phone=phone_update.phone,
-            password=phone_update.password,
-        )
-        return user
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.put("/me/change-password", response_model=UserRead)
-async def change_password(
-    password_update: UserPasswordUpdate,
-    current_user=Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
-):
-    try:
-        user = await change_user_password(
-            db=db,
-            user_id=current_user.id,
-            old_password=password_update.old_password,
-            new_password=password_update.new_password,
+            phone=data.phone,
+            old_password=data.old_password,
+            new_password=data.new_password,
+            confirm_password=data.confirm_password,
+            full_name=data.full_name,
         )
         return user
     except ValueError as e:
