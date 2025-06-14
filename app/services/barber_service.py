@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.barber import Barber
 from app.models.enums import RoleEnum
 from app.services.s3_service import delete_file_from_s3, upload_file_to_s3
-from app.utils.queries import get_barber_by_user_id
+from app.utils.selectors.selectors import get_barber_by_user_id
 
 
 def ensure_barber(role: str):

@@ -9,3 +9,11 @@ def ensure_admin(role: str):
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied: only admins can perform this action",
         )
+
+
+def ensure_superadmin(role: str):
+    if int(role) != RoleEnum.SUPERADMIN.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: only superadmins can perform this action",
+        )

@@ -99,7 +99,6 @@ class PasswordResetConfirm(BaseModel):
 class UserUpdateForAdmin(BaseModel):
     username: Optional[str] = None
     phone: Optional[str] = None
-    role_id: Optional[int] = None
     password: Optional[str] = None
     barber_profile: Optional[BarberProfileUpdate] = None
 
@@ -124,3 +123,23 @@ class UserUpdateForAdmin(BaseModel):
 
 class PromoteUserToBarberRequest(BaseModel):
     full_name: str
+
+
+class UserReadwithoutProfile(BaseModel):
+    id: int
+    username: str
+    phone: str
+    role_id: Optional[int]
+
+    class Config:
+        from_attributes = True
+
+
+class AdminOut(BaseModel):
+    id: int
+    username: str
+    phone: str
+    role_id: int
+
+    class Config:
+        from_attributes = True

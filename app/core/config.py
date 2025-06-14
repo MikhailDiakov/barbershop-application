@@ -19,9 +19,9 @@ class Settings:
     # Redis
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-    # Admin
-    ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
-    ADMIN_LOGIN: str = os.getenv("ADMIN_LOGIN", "admin123")
+    # SuperAdmin
+    SUPERADMIN_LOGIN: str = os.getenv("SUPERADMIN_LOGIN", "admin123")
+    SUPERADMIN_PASSWORD: str = os.getenv("SUPERADMIN_PASSWORD", "admin123")
 
     # Twilio
     TWILIO_ACCOUNT_SID: str = os.getenv("TWILIO_ACCOUNT_SID")
@@ -31,8 +31,8 @@ class Settings:
     # AWS S3
     AWS_ACCESS_KEY_ID: str = os.getenv("AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY: str = os.getenv("AWS_SECRET_ACCESS_KEY")
-    AWS_REGION: str = os.getenv("AWS_S3_REGION_NAME", "us-east-1")
-    S3_BUCKET_NAME: str = os.getenv("AWS_STORAGE_BUCKET_NAME")
+    AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
+    S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME")
 
 
 settings = Settings()

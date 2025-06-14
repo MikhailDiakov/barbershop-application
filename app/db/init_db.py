@@ -17,21 +17,24 @@ async def init_db():
 
 
 async def create_first_admin(db: AsyncSession):
-    result = await db.execute(select(User).where(User.role_id == RoleEnum.ADMIN.value))
-    admin = result.scalars().first()
-    if not admin:
-        admin = User(
-            username=settings.ADMIN_LOGIN,
-            hashed_password=get_password_hash(settings.ADMIN_PASSWORD),
+    result = await db.execute(
+        select(User).where(User.role_id == RoleEnum.SUPERADMIN.value)
+    )
+    superadmin = result.scalars().first()
+    if not superadmin:
+        superadmin = User(
+            username=settings.SUPERADMIN_LOGIN,
+            hashed_password=get_password_hash(settings.SUPERADMIN_PASSWORD),
             phone="",
-            role_id=RoleEnum.ADMIN.value,
+            role_id=RoleEnum.SUPERADMIN.value,
         )
-        db.add(admin)
+        db.add(superadmin)
         await db.commit()
 
 
 async def create_roles(db: AsyncSession):
     for role_id, role_name in {
+        RoleEnum.SUPERADMIN.value: "SuperAdmin",
         RoleEnum.ADMIN.value: "Admin",
         RoleEnum.BARBER.value: "Barber",
         RoleEnum.CLIENT.value: "Client",

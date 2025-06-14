@@ -10,7 +10,7 @@ from app.models import User
 from app.models.barber import Barber
 from app.models.enums import RoleEnum
 from app.services.admin.utils import ensure_admin
-from app.utils.queries import (
+from app.utils.selectors.selectors import (
     get_user_by_phone,
     get_user_by_username,
     get_user_with_barber_profile_by_id,
@@ -54,6 +54,12 @@ async def update_user(db: AsyncSession, user_id: int, data: dict, user_role: str
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    if user.role_id in (RoleEnum.SUPERADMIN.value, RoleEnum.ADMIN.value):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot modify Admin or SuperAdmin users",
+        )
+
     if "username" in data:
         existing = await get_user_by_username(db, data["username"])
         if existing and existing.id != user_id:
@@ -94,6 +100,12 @@ async def delete_user(db: AsyncSession, user_id: int, user_role: str):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    if user.role_id in (RoleEnum.SUPERADMIN.value, RoleEnum.ADMIN.value):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot delete Admin or SuperAdmin users",
+        )
+
     if user.barber_profile:
         await db.delete(user.barber_profile)
 
@@ -111,6 +123,12 @@ async def promote_user_to_barber(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    if user.role_id in (RoleEnum.ADMIN.value, RoleEnum.SUPERADMIN.value):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot promote Admin or SuperAdmin users to Barber",
         )
 
     if user.role_id == RoleEnum.BARBER.value:

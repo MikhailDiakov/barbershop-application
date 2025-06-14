@@ -12,6 +12,7 @@ from app.schemas.user import (
     UserCreate,
     UserProfileUpdate,
     UserRead,
+    UserReadwithoutProfile,
 )
 from app.services.user_service import (
     authenticate_user,
@@ -24,7 +25,11 @@ from app.services.user_service import (
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=UserReadwithoutProfile,
+    status_code=status.HTTP_201_CREATED,
+)
 async def register(user_in: UserCreate, db: AsyncSession = Depends(get_session)):
     user = await create_user(db, user_in.username, user_in.phone, user_in.password)
     return user
@@ -84,7 +89,7 @@ async def request_password_reset(
     return {"detail": "Verification code sent"}
 
 
-@router.post("/password-reset/confirm", response_model=UserRead)
+@router.post("/password-reset/confirm", response_model=UserReadwithoutProfile)
 async def password_reset_confirm(
     data: PasswordResetConfirm,
     db: AsyncSession = Depends(get_session),

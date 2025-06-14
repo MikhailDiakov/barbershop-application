@@ -7,12 +7,16 @@ from app.core.hash import get_password_hash, verify_password
 from app.models.user import User
 from app.utils.celery_tasks.worker import send_sms_task
 from app.utils.code_generator import generate_verification_code
-from app.utils.queries import get_user_by_id, get_user_by_phone, get_user_by_username
 from app.utils.redis_client import (
     can_request_code,
     delete_verification_code,
     get_verification_code,
     save_verification_code,
+)
+from app.utils.selectors.selectors import (
+    get_user_by_id,
+    get_user_by_phone,
+    get_user_by_username,
 )
 
 
