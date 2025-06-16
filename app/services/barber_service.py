@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import select, update
@@ -76,6 +77,14 @@ async def create_schedule(db: AsyncSession, barber_id: int, data, role: str):
 
     start_time_trimmed = trim_time(data.start_time)
     end_time_trimmed = trim_time(data.end_time)
+    now = datetime.utcnow()
+
+    schedule_start = datetime.combine(data.date, start_time_trimmed)
+    if schedule_start < now:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot create a schedule in the past",
+        )
 
     if await check_time_overlap(
         db, barber_id, data.date, start_time_trimmed, end_time_trimmed
@@ -97,8 +106,18 @@ async def create_schedule(db: AsyncSession, barber_id: int, data, role: str):
 
 async def get_my_schedule(db: AsyncSession, barber_id: int, role: str):
     ensure_barber(role)
+
+    now = datetime.now()
+
     result = await db.execute(
-        select(BarberSchedule).where(BarberSchedule.barber_id == barber_id)
+        select(BarberSchedule).where(
+            BarberSchedule.barber_id == barber_id,
+            (BarberSchedule.date > now.date())
+            | (
+                (BarberSchedule.date == now.date())
+                & (BarberSchedule.start_time >= now.time())
+            ),
+        )
     )
     return result.scalars().all()
 
@@ -120,10 +139,30 @@ async def update_schedule(
 
     new_start = update_data.get("start_time", schedule.start_time)
     new_end = update_data.get("end_time", schedule.end_time)
-    new_date = update_data.get("date", schedule.date)
+    schedule_date = update_data.get("data", schedule.date)
+
+    now = datetime.utcnow()
+    schedule_start = datetime.combine(schedule_date, new_start)
+
+    if schedule_start < now:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot set schedule start time in the past",
+        )
+
+    if schedule_start < now:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot set schedule start time in the past",
+        )
 
     if await check_time_overlap(
-        db, barber_id, new_date, new_start, new_end, exclude_schedule_id=schedule_id
+        db,
+        barber_id,
+        schedule_date,
+        new_start,
+        new_end,
+        exclude_schedule_id=schedule_id,
     ):
         raise HTTPException(
             status_code=400,

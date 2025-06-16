@@ -3,8 +3,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_session
-from app.core.security import create_access_token, get_current_user
+from app.api.deps import get_current_user, get_session
+from app.core.security import create_access_token
 from app.schemas.token import Token
 from app.schemas.user import (
     PasswordResetConfirm,

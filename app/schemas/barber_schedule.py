@@ -29,3 +29,24 @@ class BarberScheduleOut(BarberScheduleBase):
 
     class Config:
         from_attributes = True
+
+
+class ScheduleOut(BaseModel):
+    id: int
+    date: date
+    start_time: time
+    end_time: time
+
+    class Config:
+        from_attributes = True
+        json_encoders = {time: lambda v: v.strftime("%H:%M")}
+
+
+class BarberWithScheduleOut(BaseModel):
+    id: int
+    full_name: str
+    avatar_url: str | None
+    schedules: list[ScheduleOut]
+
+    class Config:
+        from_attributes = True

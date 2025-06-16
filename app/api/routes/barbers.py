@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_session
-from app.core.security import get_current_user_info
+from app.api.deps import get_current_barber_id, get_current_user_info, get_session
 from app.schemas.barber_schedule import (
     BarberScheduleCreate,
     BarberScheduleOut,
@@ -20,51 +19,53 @@ from app.services.barber_service import (
 router = APIRouter()
 
 
-@router.post("/", response_model=BarberScheduleOut)
+@router.post("/schedules/", response_model=BarberScheduleOut)
 async def create_my_schedule(
     data: BarberScheduleCreate,
     db: AsyncSession = Depends(get_session),
+    barber_id: int = Depends(get_current_barber_id),
     current_user=Depends(get_current_user_info),
 ):
     return await create_schedule(
-        db, barber_id=current_user["id"], data=data, role=current_user["role"]
+        db, barber_id=barber_id, data=data, role=current_user["role"]
     )
 
 
-@router.get("/", response_model=list[BarberScheduleOut])
+@router.get("/schedules/", response_model=list[BarberScheduleOut])
 async def get_my_schedules(
     db: AsyncSession = Depends(get_session),
+    barber_id: int = Depends(get_current_barber_id),
     current_user=Depends(get_current_user_info),
 ):
-    return await get_my_schedule(
-        db, barber_id=current_user["id"], role=current_user["role"]
-    )
+    return await get_my_schedule(db, barber_id=barber_id, role=current_user["role"])
 
 
-@router.put("/{schedule_id}", response_model=BarberScheduleOut)
+@router.put("/schedules/{schedule_id}", response_model=BarberScheduleOut)
 async def update_my_schedule(
     schedule_id: int,
     data: BarberScheduleUpdate,
     db: AsyncSession = Depends(get_session),
+    barber_id: int = Depends(get_current_barber_id),
     current_user=Depends(get_current_user_info),
 ):
     return await update_schedule(
         db,
         schedule_id,
-        barber_id=current_user["id"],
+        barber_id=barber_id,
         data=data,
         role=current_user["role"],
     )
 
 
-@router.delete("/{schedule_id}")
+@router.delete("/schedules/{schedule_id}")
 async def delete_my_schedule(
     schedule_id: int,
     db: AsyncSession = Depends(get_session),
+    barber_id: int = Depends(get_current_barber_id),
     current_user=Depends(get_current_user_info),
 ):
     return await delete_schedule(
-        db, schedule_id, barber_id=current_user["id"], role=current_user["role"]
+        db, schedule_id, barber_id=barber_id, role=current_user["role"]
     )
 
 

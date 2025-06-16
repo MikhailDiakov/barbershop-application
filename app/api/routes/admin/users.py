@@ -3,8 +3,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_session
-from app.core.security import get_current_user_info
+from app.api.deps import get_current_user_info, get_session
 from app.schemas.user import PromoteUserToBarberRequest, UserRead, UserUpdateForAdmin
 from app.services.admin.users import (
     delete_user,

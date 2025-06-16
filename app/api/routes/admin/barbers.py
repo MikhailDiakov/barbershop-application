@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, File, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_session
-from app.core.security import get_current_user_info
+from app.api.deps import get_current_user_info, get_session
 from app.schemas.barber import BarberCreate, BarberOut
 from app.services.admin.barbers import (
     create_barber,

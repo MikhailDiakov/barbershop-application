@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.hash import get_password_hash, verify_password
 from app.models.user import User
-from app.utils.celery_tasks.worker import send_sms_task
+from app.utils.celery_tasks.sms import send_sms_task
 from app.utils.code_generator import generate_verification_code
 from app.utils.redis_client import (
     can_request_code,
