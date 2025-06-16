@@ -54,11 +54,21 @@ async def update_user(db: AsyncSession, user_id: int, data: dict, user_role: str
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if user.role_id in (RoleEnum.SUPERADMIN.value, RoleEnum.ADMIN.value):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You cannot modify Admin or SuperAdmin users",
-        )
+    target_role = user.role_id
+    current_role = int(user_role)
+
+    if current_role == RoleEnum.ADMIN.value:
+        if target_role in (RoleEnum.ADMIN.value, RoleEnum.SUPERADMIN.value):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You cannot modify Admin or SuperAdmin users",
+            )
+    elif current_role == RoleEnum.SUPERADMIN.value:
+        if target_role == RoleEnum.SUPERADMIN.value:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You cannot modify another SuperAdmin",
+            )
 
     if "username" in data:
         existing = await get_user_by_username(db, data["username"])

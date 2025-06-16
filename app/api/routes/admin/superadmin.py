@@ -14,7 +14,7 @@ from app.services.admin.superadmin import (
 router = APIRouter()
 
 
-@router.get("/", response_model=list[AdminOut])
+@router.get("/admins", response_model=list[AdminOut])
 async def list_admins(
     db: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user_info),
@@ -22,7 +22,7 @@ async def list_admins(
     return await get_all_admins(db, current_user["role"])
 
 
-@router.get("/{admin_id}", response_model=AdminOut)
+@router.get("/admins/{admin_id}", response_model=AdminOut)
 async def get_admin(
     admin_id: int,
     db: AsyncSession = Depends(get_session),
@@ -31,7 +31,7 @@ async def get_admin(
     return await get_admin_by_id(db, admin_id, current_user["role"])
 
 
-@router.post("/{user_id}/promote", response_model=UserReadwithoutProfile)
+@router.post("/users/{user_id}/promote", response_model=UserReadwithoutProfile)
 async def promote_to_admin_route(
     user_id: int,
     db: AsyncSession = Depends(get_session),
@@ -46,7 +46,7 @@ async def promote_to_admin_route(
     return user
 
 
-@router.post("/{user_id}/demote", response_model=UserReadwithoutProfile)
+@router.post("/users/{user_id}/demote", response_model=UserReadwithoutProfile)
 async def demote_from_admin_route(
     user_id: int,
     db: AsyncSession = Depends(get_session),
