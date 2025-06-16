@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import User
 from app.models.enums import RoleEnum
 from app.services.admin.utils import ensure_superadmin
-from app.utils.selectors.selectors import get_user_by_id
+from app.utils.selectors.user import get_user_by_id
 
 
 async def get_all_admins(db: AsyncSession, current_user_role: str) -> list[User]:

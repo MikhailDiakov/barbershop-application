@@ -11,10 +11,10 @@ from app.models.user import User
 from app.schemas.barber import BarberCreate
 from app.services.admin.utils import ensure_admin
 from app.services.s3_service import delete_file_from_s3, upload_file_to_s3
-from app.utils.selectors.selectors import (
+from app.utils.selectors.barber import (
     get_barber_by_id as get_barber_by_id_without_admin,
 )
-from app.utils.selectors.selectors import (
+from app.utils.selectors.user import (
     get_user_by_id,
     get_user_by_phone,
     get_user_by_username,

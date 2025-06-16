@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_session
 from app.core.config import settings
-from app.utils.selectors.selectors import get_user_with_barber_profile_by_id
+from app.utils.selectors.user import get_user_with_barber_profile_by_id
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 

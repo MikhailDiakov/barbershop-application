@@ -1,13 +1,16 @@
 import re
 
 from fastapi import HTTPException, UploadFile, status
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.barber import Barber
+from app.models.barberschedule import BarberSchedule
 from app.models.enums import RoleEnum
 from app.services.s3_service import delete_file_from_s3, upload_file_to_s3
-from app.utils.selectors.selectors import get_barber_by_user_id
+from app.utils.selectors.barber import get_barber_by_user_id
+from app.utils.selectors.schedule import get_schedule_by_id
+from app.utils.time_correction import check_time_overlap, trim_time
 
 
 def ensure_barber(role: str):
@@ -66,3 +69,83 @@ async def remove_barber_photo(db: AsyncSession, barber_id: int, user_role: str):
     stmt = update(Barber).where(Barber.id == barber.id).values(avatar_url=None)
     await db.execute(stmt)
     await db.commit()
+
+
+async def create_schedule(db: AsyncSession, barber_id: int, data, role: str):
+    ensure_barber(role)
+
+    start_time_trimmed = trim_time(data.start_time)
+    end_time_trimmed = trim_time(data.end_time)
+
+    if await check_time_overlap(
+        db, barber_id, data.date, start_time_trimmed, end_time_trimmed
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="This time slot overlaps with an existing schedule",
+        )
+    schedule_data = data.dict()
+    schedule_data["start_time"] = start_time_trimmed
+    schedule_data["end_time"] = end_time_trimmed
+
+    schedule = BarberSchedule(barber_id=barber_id, **schedule_data)
+    db.add(schedule)
+    await db.commit()
+    await db.refresh(schedule)
+    return schedule
+
+
+async def get_my_schedule(db: AsyncSession, barber_id: int, role: str):
+    ensure_barber(role)
+    result = await db.execute(
+        select(BarberSchedule).where(BarberSchedule.barber_id == barber_id)
+    )
+    return result.scalars().all()
+
+
+async def update_schedule(
+    db: AsyncSession, schedule_id: int, barber_id: int, data, role: str
+):
+    ensure_barber(role)
+    schedule = await get_schedule_by_id(db, schedule_id, barber_id)
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+
+    update_data = data.dict(exclude_unset=True)
+
+    if "start_time" in update_data and update_data["start_time"] is not None:
+        update_data["start_time"] = trim_time(update_data["start_time"])
+    if "end_time" in update_data and update_data["end_time"] is not None:
+        update_data["end_time"] = trim_time(update_data["end_time"])
+
+    new_start = update_data.get("start_time", schedule.start_time)
+    new_end = update_data.get("end_time", schedule.end_time)
+    new_date = update_data.get("date", schedule.date)
+
+    if await check_time_overlap(
+        db, barber_id, new_date, new_start, new_end, exclude_schedule_id=schedule_id
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="This time slot overlaps with an existing schedule",
+        )
+
+    for key, value in update_data.items():
+        setattr(schedule, key, value)
+
+    await db.commit()
+    await db.refresh(schedule)
+    return schedule
+
+
+async def delete_schedule(
+    db: AsyncSession, schedule_id: int, barber_id: int, role: str
+):
+    ensure_barber(role)
+    schedule = await get_schedule_by_id(db, schedule_id, barber_id)
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+
+    await db.delete(schedule)
+    await db.commit()
+    return {"detail": "Schedule deleted"}

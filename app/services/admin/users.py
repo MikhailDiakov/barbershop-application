@@ -10,7 +10,7 @@ from app.models import User
 from app.models.barber import Barber
 from app.models.enums import RoleEnum
 from app.services.admin.utils import ensure_admin
-from app.utils.selectors.selectors import (
+from app.utils.selectors.user import (
     get_user_by_phone,
     get_user_by_username,
     get_user_with_barber_profile_by_id,

@@ -13,7 +13,7 @@ from app.utils.redis_client import (
     get_verification_code,
     save_verification_code,
 )
-from app.utils.selectors.selectors import (
+from app.utils.selectors.user import (
     get_user_by_id,
     get_user_by_phone,
     get_user_by_username,

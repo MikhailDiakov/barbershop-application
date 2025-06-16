@@ -19,6 +19,6 @@ async def startup():
 
 
 app.include_router(users.router, prefix="/users", tags=["users"])
-app.include_router(admin_router, prefix="/admin", tags=["admin"])
 app.include_router(barbers.router, prefix="/barbers", tags=["barbers"])
+app.include_router(admin_router, prefix="/admin", tags=["admin"])
 app.include_router(superadmin_router, prefix="/superadmin", tags=["superadmin"])
