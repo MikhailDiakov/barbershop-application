@@ -14,6 +14,7 @@ class Appointment(Base):
     barber_id = Column(Integer, ForeignKey("barbers.id"))
     appointment_time = Column(DateTime, index=True)
     status = Column(String, default="scheduled")
+    schedule_id = Column(Integer, ForeignKey("barber_schedules.id"), nullable=False)
 
     client = relationship(
         "User", foreign_keys=[client_id], back_populates="appointments_as_client"

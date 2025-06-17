@@ -1,9 +1,21 @@
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from datetime import date
+from typing import Optional
+
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_info, get_session
 from app.schemas.barber import BarberCreate, BarberOut
+from app.schemas.barber_schedule import (
+    AdminBarberScheduleCreate,
+    AdminBarberScheduleOut,
+    AdminBarberScheduleUpdate,
+)
 from app.services.admin.barbers import (
+    admin_create_schedule_service,
+    admin_delete_schedule_service,
+    admin_get_all_schedules,
+    admin_update_schedule_service,
     create_barber,
     delete_barber,
     get_all_barbers,
@@ -66,3 +78,57 @@ async def delete_barber_avatar(
     current_user=Depends(get_current_user_info),
 ):
     await remove_barber_photo(db, barber_id, current_user["role"])
+
+
+@router.get("/schedules/", response_model=list[AdminBarberScheduleOut])
+async def admin_list_schedules(
+    upcoming_only: bool = Query(default=False),
+    barber_id: Optional[int] = Query(default=None),
+    start_date: Optional[date] = Query(default=None),
+    end_date: Optional[date] = Query(default=None),
+    db: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user_info),
+):
+    return await admin_get_all_schedules(
+        db,
+        upcoming_only,
+        current_user["role"],
+        barber_id=barber_id,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+
+@router.post(
+    "/schedules/",
+    response_model=AdminBarberScheduleOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def admin_create_schedule(
+    data: AdminBarberScheduleCreate,
+    db: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user_info),
+):
+    return await admin_create_schedule_service(db, data, current_user["role"])
+
+
+@router.put("/schedules/{schedule_id}", response_model=AdminBarberScheduleOut)
+async def admin_update_schedule(
+    schedule_id: int,
+    data: AdminBarberScheduleUpdate,
+    db: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user_info),
+):
+    return await admin_update_schedule_service(
+        db, schedule_id, data, current_user["role"]
+    )
+
+
+@router.delete("/schedules/{schedule_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def admin_delete_schedule(
+    schedule_id: int,
+    db: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user_info),
+):
+    await admin_delete_schedule_service(db, schedule_id, current_user["role"])
+    return None

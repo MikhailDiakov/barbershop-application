@@ -40,6 +40,7 @@ async def create_appointment_service(
         appointment_time=appointment_dt,
         status="scheduled",
         client_id=current_user["id"] if current_user else None,
+        schedule_id=data.schedule_id,
     )
 
     db.add(appointment)

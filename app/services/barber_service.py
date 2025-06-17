@@ -126,9 +126,16 @@ async def update_schedule(
     db: AsyncSession, schedule_id: int, barber_id: int, data, role: str
 ):
     ensure_barber(role)
+
     schedule = await get_schedule_by_id(db, schedule_id, barber_id)
     if not schedule:
         raise HTTPException(status_code=404, detail="Schedule not found")
+
+    if not schedule.is_active:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot update schedule: this slot has already been booked by a client",
+        )
 
     update_data = data.dict(exclude_unset=True)
 
