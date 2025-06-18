@@ -9,12 +9,17 @@ class Settings:
     PROJECT_NAME: str = "Barbershop"
 
     # DB
-    DB_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./barbershop.db")
+    DB_URL_ASYNC: str = os.getenv(
+        "DATABASE_URL_ASYNC", "sqlite+aiosqlite:///./barbershop.db"
+    )
+    DB_URL_SYNC: str = os.getenv("DATABASE_URL_SYNC", "sqlite:///./barbershop.db")
 
     # JWT
-    ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
+        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60 * 24)
+    )
     SECRET_KEY: str = os.getenv("SECRET_KEY", "super-secret")
-    ALGORITHM = "HS256"
+    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
 
     # Redis
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
