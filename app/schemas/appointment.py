@@ -20,6 +20,7 @@ class AppointmentCreate(BaseModel):
 class AppointmentOut(BaseModel):
     id: int
     barber_id: int
+    schedule_id: int
     client_name: str
     client_phone: str
     appointment_time: datetime

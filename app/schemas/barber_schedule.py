@@ -22,7 +22,6 @@ class BarberScheduleUpdate(BaseModel):
     date: datetime.date | None = None
     start_time: datetime.time | None = None
     end_time: datetime.time | None = None
-    is_active: bool | None = None
 
 
 class BarberScheduleOut(BarberScheduleBase):

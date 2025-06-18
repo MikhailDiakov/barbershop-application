@@ -226,12 +226,6 @@ async def admin_update_schedule_service(
     if not schedule:
         raise HTTPException(status_code=404, detail="Schedule not found")
 
-    if not schedule.is_active:
-        raise HTTPException(
-            status_code=400,
-            detail="This slot is already booked by a client. Please delete the client's appointment first to update the schedule.",
-        )
-
     update_data = data.dict(exclude_unset=True)
 
     if "barber_id" in update_data:
@@ -265,9 +259,6 @@ async def admin_update_schedule_service(
     schedule.start_time = start_time
     schedule.end_time = end_time
 
-    if "is_active" in update_data:
-        schedule.is_active = update_data["is_active"]
-
     result = await db.execute(
         select(Appointment).where(Appointment.schedule_id == schedule_id)
     )
@@ -294,6 +285,12 @@ async def admin_delete_schedule_service(
 
     if not schedule:
         raise HTTPException(status_code=404, detail="Schedule not found")
+
+    if not schedule.is_active:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete schedule: this slot has already been booked by a client. Please cancel the appointment first.",
+        )
 
     await db.delete(schedule)
     await db.commit()
