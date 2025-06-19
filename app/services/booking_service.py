@@ -1,13 +1,29 @@
 from datetime import datetime, timedelta
+from typing import List
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.models.appointment import Appointment
+from app.models.barber import Barber
+from app.models.review import Review
 from app.schemas.appointment import AppointmentCreate
+from app.schemas.barber import (
+    BarberOutwithReviews,
+    BarberOutwithReviewsDetailed,
+    ReviewReadForBarber,
+)
+from app.schemas.barber_schedule import BarberWithScheduleAndReviewsOut
 from app.utils.celery_tasks.sms import send_sms_task
-from app.utils.selectors.schedule import get_schedule_by_id_simple
+from app.utils.redis_client import get_barber_rating, save_barber_rating
+from app.utils.selectors.barber import get_all_barbers
+from app.utils.selectors.reviews import get_barber_rating_from_db
+from app.utils.selectors.schedule import (
+    get_barbers_with_schedules,
+    get_schedule_by_id_simple,
+)
 from app.utils.selectors.user import get_user_by_id
 
 
@@ -80,3 +96,94 @@ async def get_appointments_by_user(db: AsyncSession, user_id: int, upcoming_only
         query = query.where(Appointment.appointment_time >= now)
     result = await db.execute(query)
     return result.scalars().all()
+
+
+async def get_barbers_with_ratings(db: AsyncSession) -> List[BarberOutwithReviews]:
+    barbers = await get_all_barbers(db)
+    result = []
+
+    for barber in barbers:
+        cached_rating = await get_barber_rating(barber.id)
+
+        if cached_rating:
+            avg_rating, reviews_count = cached_rating
+        else:
+            avg_rating, reviews_count = await get_barber_rating_from_db(db, barber.id)
+            await save_barber_rating(barber.id, avg_rating, reviews_count)
+
+        barber_out = BarberOutwithReviews.from_orm(barber).copy(
+            update={
+                "avg_rating": avg_rating,
+                "reviews_count": reviews_count,
+            }
+        )
+        result.append(barber_out)
+
+    return result
+
+
+async def get_barber_detailed_info(
+    db: AsyncSession, barber_id: int
+) -> BarberOutwithReviewsDetailed | None:
+    barber = await db.get(
+        Barber,
+        barber_id,
+        options=[joinedload(Barber.reviews).joinedload(Review.client)],
+    )
+
+    if not barber:
+        raise HTTPException(status_code=404, detail="Barber not found")
+
+    cached_rating = await get_barber_rating(barber.id)
+    if cached_rating:
+        avg_rating, reviews_count = cached_rating
+    else:
+        avg_rating, reviews_count = await get_barber_rating_from_db(db, barber.id)
+        await save_barber_rating(barber.id, avg_rating, reviews_count)
+
+    reviews = [
+        ReviewReadForBarber(
+            id=r.id,
+            client_name=r.client.username,
+            rating=r.rating,
+            comment=r.comment,
+            created_at=r.created_at,
+        )
+        for r in barber.reviews
+        if r.is_approved
+    ]
+
+    return BarberOutwithReviewsDetailed(
+        id=barber.id,
+        full_name=barber.full_name,
+        avatar_url=barber.avatar_url,
+        avg_rating=avg_rating,
+        reviews_count=reviews_count,
+        reviews=reviews,
+    )
+
+
+async def get_barbers_with_schedules_and_ratings(
+    db: AsyncSession,
+) -> list[BarberWithScheduleAndReviewsOut]:
+    barbers = await get_barbers_with_schedules(db)
+    result = []
+
+    for barber in barbers:
+        cached_rating = await get_barber_rating(barber.id)
+
+        if cached_rating:
+            avg_rating, reviews_count = cached_rating
+        else:
+            avg_rating, reviews_count = await get_barber_rating_from_db(db, barber.id)
+            await save_barber_rating(barber.id, avg_rating, reviews_count)
+
+        barber_out = BarberWithScheduleAndReviewsOut.from_orm(barber).copy(
+            update={
+                "avg_rating": avg_rating,
+                "reviews_count": reviews_count,
+            }
+        )
+        result.append(barber_out)
+
+    return result

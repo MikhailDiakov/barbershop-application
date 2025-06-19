@@ -1,24 +1,36 @@
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_info, get_current_user_optional, get_session
 from app.schemas.appointment import AppointmentCreate, AppointmentOut
-from app.schemas.barber_schedule import BarberWithScheduleOut
+from app.schemas.barber import BarberOutwithReviews, BarberOutwithReviewsDetailed
+from app.schemas.barber_schedule import BarberWithScheduleAndReviewsOut
 from app.services.booking_service import (
     create_appointment_service,
     get_appointments_by_user,
+    get_barber_detailed_info,
+    get_barbers_with_ratings,
+    get_barbers_with_schedules_and_ratings,
 )
-from app.utils.selectors.schedule import get_barbers_with_schedules
 
 router = APIRouter()
 
 
-@router.get("/available-slots", response_model=list[BarberWithScheduleOut])
+@router.get("/barbers", response_model=List[BarberOutwithReviews])
+async def list_barbers(db: AsyncSession = Depends(get_session)):
+    return await get_barbers_with_ratings(db)
+
+
+@router.get("/barbers/{barber_id}", response_model=BarberOutwithReviewsDetailed)
+async def get_barber_details(barber_id: int, db: AsyncSession = Depends(get_session)):
+    return await get_barber_detailed_info(db, barber_id)
+
+
+@router.get("/available-slots", response_model=list[BarberWithScheduleAndReviewsOut])
 async def get_barbers_with_available_slots(db: AsyncSession = Depends(get_session)):
-    barbers = await get_barbers_with_schedules(db)
-    return barbers
+    return await get_barbers_with_schedules_and_ratings(db)
 
 
 @router.post("/", response_model=AppointmentOut)

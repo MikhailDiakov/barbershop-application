@@ -7,16 +7,16 @@ from app.api.deps import get_current_user_info, get_session
 from app.schemas.user import PromoteUserToBarberRequest, UserRead, UserUpdateForAdmin
 from app.services.admin.users import (
     delete_user,
-    get_user_by_id,
     get_users,
     promote_user_to_barber,
     update_user,
 )
+from app.utils.selectors.user import get_user_by_id
 
 router = APIRouter()
 
 
-@router.get("/", response_model=list[UserRead], response_model_exclude_none=True)
+@router.get("/", response_model=list[UserRead])
 async def list_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=50),
@@ -29,7 +29,7 @@ async def list_users(
     )
 
 
-@router.get("/{user_id}", response_model=UserRead, response_model_exclude_none=True)
+@router.get("/{user_id}", response_model=UserRead)
 async def get_user(
     user_id: int,
     db: AsyncSession = Depends(get_session),
@@ -38,7 +38,7 @@ async def get_user(
     return await get_user_by_id(db, user_id, current_user["role"])
 
 
-@router.put("/{user_id}", response_model=UserRead, response_model_exclude_none=True)
+@router.put("/{user_id}", response_model=UserRead)
 async def update_user_data(
     user_id: int,
     data: UserUpdateForAdmin,

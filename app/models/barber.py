@@ -12,7 +12,7 @@ class Barber(Base):
     full_name = Column(String, nullable=True)
     avatar_url = Column(String, nullable=True)
 
-    user = relationship("User", back_populates="barber_profile")
+    user = relationship("User")
     schedules = relationship(
         "BarberSchedule", back_populates="barber", cascade="all, delete-orphan"
     )
@@ -22,4 +22,7 @@ class Barber(Base):
         foreign_keys="Appointment.barber_id",
         back_populates="barber",
         cascade="all, delete-orphan",
+    )
+    reviews = relationship(
+        "Review", back_populates="barber", cascade="all, delete-orphan"
     )

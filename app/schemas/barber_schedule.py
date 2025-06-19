@@ -52,6 +52,11 @@ class BarberWithScheduleOut(BaseModel):
         from_attributes = True
 
 
+class BarberWithScheduleAndReviewsOut(BarberWithScheduleOut):
+    avg_rating: float = 0.0
+    reviews_count: int = 0
+
+
 class AdminBarberScheduleCreate(BarberScheduleBase):
     barber_id: int
 

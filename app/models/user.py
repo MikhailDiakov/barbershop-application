@@ -15,8 +15,6 @@ class User(Base):
 
     role = relationship("Role", back_populates="users")
 
-    barber_profile = relationship("Barber", back_populates="user", uselist=False)
-
     appointments_as_client = relationship(
         "Appointment",
         foreign_keys="Appointment.client_id",

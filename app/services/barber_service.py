@@ -8,8 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.barber import Barber
 from app.models.barberschedule import BarberSchedule
 from app.models.enums import RoleEnum
+from app.schemas.barber import BarberUpdate
 from app.services.s3_service import delete_file_from_s3, upload_file_to_s3
-from app.utils.selectors.barber import get_barber_by_user_id
+from app.utils.selectors.barber import get_barber_by_id, get_barber_by_user_id
 from app.utils.selectors.schedule import get_schedule_by_id
 from app.utils.time_correction import check_time_overlap, trim_time
 
@@ -195,3 +196,22 @@ async def delete_schedule(
     await db.delete(schedule)
     await db.commit()
     return {"detail": "Schedule deleted"}
+
+
+async def get_my_barber_by_id(db: AsyncSession, barber_id: int, role: str) -> Barber:
+    ensure_barber(role)
+    barber = await get_barber_by_id(db, barber_id)
+    if not barber:
+        raise HTTPException(status_code=404, detail="Barber not found")
+    return barber
+
+
+async def update_my_barber(
+    db: AsyncSession, barber_id: int, data: BarberUpdate, role: str
+) -> Barber:
+    ensure_barber(role)
+    barber = await get_my_barber_by_id(db, barber_id)
+    barber.full_name = data.full_name
+    await db.commit()
+    await db.refresh(barber)
+    return barber

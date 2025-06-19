@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import decode_access_token
 from app.db.session import async_session
 from app.utils.selectors.barber import get_barber_id_by_user_id
-from app.utils.selectors.user import get_user_with_barber_profile_by_id
+from app.utils.selectors.user import get_user_by_id
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
 oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/users/login", auto_error=False)
@@ -33,7 +33,7 @@ async def get_current_user(
     if user_id is None:
         raise credentials_exception
 
-    user = await get_user_with_barber_profile_by_id(db, int(user_id))
+    user = await get_user_by_id(db, int(user_id))
     if user is None:
         raise credentials_exception
 

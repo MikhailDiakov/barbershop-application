@@ -12,7 +12,6 @@ from app.schemas.user import (
     UserCreate,
     UserProfileUpdate,
     UserRead,
-    UserReadwithoutProfile,
 )
 from app.services.user_service import (
     authenticate_user,
@@ -27,7 +26,7 @@ router = APIRouter()
 
 @router.post(
     "/register",
-    response_model=UserReadwithoutProfile,
+    response_model=UserRead,
     status_code=status.HTTP_201_CREATED,
 )
 async def register(user_in: UserCreate, db: AsyncSession = Depends(get_session)):
@@ -52,7 +51,7 @@ async def login(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get("/me", response_model=UserRead, response_model_exclude_none=True)
+@router.get("/me", response_model=UserRead)
 async def get_my_user(
     current_user=Depends(get_current_user),
 ):
@@ -73,7 +72,6 @@ async def update_my_profile(
             old_password=data.old_password,
             new_password=data.new_password,
             confirm_password=data.confirm_password,
-            full_name=data.full_name,
         )
         return user
     except ValueError as e:
@@ -89,7 +87,7 @@ async def request_password_reset(
     return {"detail": "Verification code sent"}
 
 
-@router.post("/password-reset/confirm", response_model=UserReadwithoutProfile)
+@router.post("/password-reset/confirm", response_model=UserRead)
 async def password_reset_confirm(
     data: PasswordResetConfirm,
     db: AsyncSession = Depends(get_session),

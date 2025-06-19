@@ -57,7 +57,6 @@ async def update_user_profile(
     old_password: Optional[str] = None,
     new_password: Optional[str] = None,
     confirm_password: Optional[str] = None,
-    full_name: Optional[str] = None,
 ):
     user = await get_user_by_id(db, user_id)
     if not user:
@@ -77,9 +76,6 @@ async def update_user_profile(
         if not old_password or not verify_password(old_password, user.hashed_password):
             raise HTTPException(status_code=400, detail="Old password is incorrect")
         user.hashed_password = get_password_hash(new_password)
-
-    if full_name and user.barber_profile:
-        user.barber_profile.full_name = full_name
 
     await db.commit()
     await db.refresh(user)

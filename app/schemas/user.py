@@ -2,7 +2,6 @@ from typing import Optional
 
 from pydantic import BaseModel, field_validator, model_validator
 
-from app.schemas.barber import BarberInfo, BarberProfileUpdate
 from app.schemas.validators import (
     validate_password_complexity,
     validate_phone,
@@ -40,7 +39,6 @@ class UserRead(BaseModel):
     username: str
     phone: str
     role_id: Optional[int]
-    barber_profile: Optional[BarberInfo]
 
     class Config:
         from_attributes = True
@@ -51,7 +49,6 @@ class UserProfileUpdate(BaseModel):
     old_password: Optional[str] = None
     new_password: Optional[str] = None
     confirm_password: Optional[str] = None
-    full_name: Optional[str] = None
 
     @field_validator("phone")
     def phone_valid(cls, v):
@@ -100,7 +97,6 @@ class UserUpdateForAdmin(BaseModel):
     username: Optional[str] = None
     phone: Optional[str] = None
     password: Optional[str] = None
-    barber_profile: Optional[BarberProfileUpdate] = None
 
     @field_validator("username")
     def username_length(cls, v: Optional[str]) -> Optional[str]:
@@ -123,16 +119,6 @@ class UserUpdateForAdmin(BaseModel):
 
 class PromoteUserToBarberRequest(BaseModel):
     full_name: str
-
-
-class UserReadwithoutProfile(BaseModel):
-    id: int
-    username: str
-    phone: str
-    role_id: Optional[int]
-
-    class Config:
-        from_attributes = True
 
 
 class AdminOut(BaseModel):

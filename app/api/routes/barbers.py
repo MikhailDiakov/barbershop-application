@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_barber_id, get_current_user_info, get_session
+from app.schemas.barber import BarberOut, BarberUpdate
 from app.schemas.barber_schedule import (
     BarberScheduleCreate,
     BarberScheduleOut,
@@ -10,8 +11,10 @@ from app.schemas.barber_schedule import (
 from app.services.barber_service import (
     create_schedule,
     delete_schedule,
+    get_my_barber_by_id,
     get_my_schedule,
     remove_barber_photo,
+    update_my_barber,
     update_schedule,
     upload_barber_photo,
 )
@@ -67,6 +70,25 @@ async def delete_my_schedule(
     return await delete_schedule(
         db, schedule_id, barber_id=barber_id, role=current_user["role"]
     )
+
+
+@router.get("/me", response_model=BarberOut)
+async def get_my_barber_profile(
+    db: AsyncSession = Depends(get_session),
+    barber_id: int = Depends(get_current_barber_id),
+    current_user=Depends(get_current_user_info),
+):
+    return await get_my_barber_by_id(db, barber_id, role=current_user["role"])
+
+
+@router.put("/me", response_model=BarberOut)
+async def update_my_barber_profile(
+    data: BarberUpdate,
+    db: AsyncSession = Depends(get_session),
+    barber_id: int = Depends(get_current_barber_id),
+    current_user=Depends(get_current_user_info),
+):
+    return await update_my_barber(db, barber_id, data, role=current_user["role"])
 
 
 @router.post("/avatar")

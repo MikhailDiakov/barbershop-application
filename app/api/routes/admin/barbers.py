@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_info, get_session
-from app.schemas.barber import BarberCreate, BarberOut
+from app.schemas.barber import BarberCreate, BarberOut, BarberUpdate
 from app.schemas.barber_schedule import (
     AdminBarberScheduleCreate,
     AdminBarberScheduleOut,
@@ -21,6 +21,7 @@ from app.services.admin.barbers import (
     get_all_barbers,
     get_barber_by_id,
     remove_barber_photo,
+    update_barber_by_admin,
     upload_barber_photo,
 )
 
@@ -50,6 +51,18 @@ async def add_barber(
     current_user=Depends(get_current_user_info),
 ):
     return await create_barber(db, barber, current_user["role"])
+
+
+@router.put("/{barber_id}", response_model=BarberOut)
+async def update_barber(
+    barber_id: int,
+    data: BarberUpdate,
+    db: AsyncSession = Depends(get_session),
+    current_user=Depends(get_current_user_info),
+):
+    return await update_barber_by_admin(
+        db=db, barber_id=barber_id, data=data, user_role=current_user["role"]
+    )
 
 
 @router.delete("/{barber_id}", status_code=status.HTTP_204_NO_CONTENT)

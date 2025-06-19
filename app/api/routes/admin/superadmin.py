@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_info, get_session
-from app.schemas.user import AdminOut, UserReadwithoutProfile
+from app.schemas.user import AdminOut, UserRead
 from app.services.admin.superadmin import (
     demote_admin_to_client,
     get_admin_by_id,
@@ -30,7 +30,7 @@ async def get_admin(
     return await get_admin_by_id(db, admin_id, current_user["role"])
 
 
-@router.post("/users/{user_id}/promote", response_model=UserReadwithoutProfile)
+@router.post("/users/{user_id}/promote", response_model=UserRead)
 async def promote_to_admin_route(
     user_id: int,
     db: AsyncSession = Depends(get_session),
@@ -45,7 +45,7 @@ async def promote_to_admin_route(
     return user
 
 
-@router.post("/users/{user_id}/demote", response_model=UserReadwithoutProfile)
+@router.post("/users/{user_id}/demote", response_model=UserRead)
 async def demote_from_admin_route(
     user_id: int,
     db: AsyncSession = Depends(get_session),

@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,3 +34,9 @@ async def get_barber_id_by_user_id(db: AsyncSession, user_id: int) -> int:
     if not barber_id:
         raise HTTPException(status_code=404, detail="Barber not found")
     return barber_id
+
+
+async def get_all_barbers(db: AsyncSession) -> List[Barber]:
+    result = await db.execute(select(Barber))
+    barbers = result.scalars().all()
+    return barbers

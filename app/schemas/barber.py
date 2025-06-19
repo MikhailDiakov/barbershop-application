@@ -1,7 +1,8 @@
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, field_validator
 
+from app.schemas.review import ReviewReadForBarber
 from app.schemas.validators import (
     validate_password_complexity,
     validate_phone,
@@ -39,18 +40,33 @@ class BarberOut(BarberBase):
         from_attributes = True
 
 
-class BarberUpdate(BaseModel):
-    full_name: Optional[str] = None
-
-
-class BarberInfo(BaseModel):
-    full_name: Optional[str]
-    avatar_url: Optional[str]
+class BarberOutwithReviews(BarberBase):
+    id: int
+    avatar_url: Optional[str] = None
+    avg_rating: float = 0.0
+    reviews_count: int = 0
 
     class Config:
         from_attributes = True
 
 
-class BarberProfileUpdate(BaseModel):
+class BarberUpdate(BaseModel):
     full_name: Optional[str] = None
+
+    @field_validator("full_name")
+    def name_valid(cls, v: str) -> str:
+        if len(v.strip()) < 2:
+            raise ValueError("Full name must be at least 2 characters")
+        return v.strip()
+
+
+class BarberOutwithReviewsDetailed(BaseModel):
+    id: int
+    full_name: str
     avatar_url: Optional[str] = None
+    avg_rating: float
+    reviews_count: int
+    reviews: List[ReviewReadForBarber]
+
+    class Config:
+        from_attributes = True

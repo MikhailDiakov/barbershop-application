@@ -11,7 +11,7 @@ from app.models.barber import Barber
 from app.models.barberschedule import BarberSchedule
 from app.models.enums import RoleEnum
 from app.models.user import User
-from app.schemas.barber import BarberCreate
+from app.schemas.barber import BarberCreate, BarberUpdate
 from app.schemas.barber_schedule import (
     AdminBarberScheduleCreate,
     AdminBarberScheduleUpdate,
@@ -31,6 +31,13 @@ from app.utils.selectors.user import (
     get_user_by_username,
 )
 from app.utils.time_correction import check_time_overlap, trim_time
+
+
+async def get_all_barbers(db: AsyncSession, user_role: RoleEnum):
+    ensure_admin(user_role)
+
+    result = await db.execute(select(Barber))
+    return result.scalars().all()
 
 
 async def create_barber(
@@ -72,13 +79,6 @@ async def create_barber(
     return barber
 
 
-async def get_all_barbers(db: AsyncSession, user_role: RoleEnum):
-    ensure_admin(user_role)
-
-    result = await db.execute(select(Barber))
-    return result.scalars().all()
-
-
 async def delete_barber(db: AsyncSession, barber_id: int, user_role: RoleEnum):
     ensure_admin(user_role)
 
@@ -93,6 +93,27 @@ async def delete_barber(db: AsyncSession, barber_id: int, user_role: RoleEnum):
 
     await db.delete(barber)
     await db.commit()
+
+
+async def update_barber_by_admin(
+    db: AsyncSession,
+    barber_id: int,
+    data: BarberUpdate,
+    user_role: RoleEnum,
+):
+    ensure_admin(user_role)
+
+    barber = await get_barber_by_id_without_admin(db, barber_id)
+    if not barber:
+        raise HTTPException(status_code=404, detail="Barber not found")
+
+    if data.full_name is not None:
+        barber.full_name = data.full_name
+
+    db.add(barber)
+    await db.commit()
+    await db.refresh(barber)
+    return barber
 
 
 async def get_barber_by_id(db: AsyncSession, barber_id: int, user_role: str):
