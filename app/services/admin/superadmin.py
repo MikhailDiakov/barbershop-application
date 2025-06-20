@@ -89,3 +89,18 @@ async def demote_admin_to_client(
     await db.commit()
     await db.refresh(user)
     return user
+
+
+def raise_fake_error(current_user_role: int, error_type: str = "zero_division") -> None:
+    ensure_superadmin(current_user_role)
+
+    if error_type == "zero_division":
+        _ = 1 / 0
+    elif error_type == "runtime":
+        raise RuntimeError("This is a test RuntimeError for Sentry.")
+    elif error_type == "http_403":
+        raise HTTPException(status_code=403, detail="Access denied.")
+    elif error_type == "custom":
+        raise Exception("Custom generic exception for Sentry test.")
+    else:
+        raise ValueError("Unsupported error type.")

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_info, get_session
@@ -8,6 +8,7 @@ from app.services.admin.superadmin import (
     get_admin_by_id,
     get_all_admins,
     promote_user_to_admin,
+    raise_fake_error,
 )
 
 router = APIRouter()
@@ -58,3 +59,15 @@ async def demote_from_admin_route(
         current_user_role=current_user["role"],
     )
     return user
+
+
+@router.get("/debug-error")
+async def debug_error_route(
+    error_type: str = Query(default="zero_division"),
+    current_user=Depends(get_current_user_info),
+):
+    """
+    Trigger a debug error to test Sentry. Only for superadmin.
+    error_type options: zero_division | runtime | http_403 | custom
+    """
+    raise_fake_error(current_user_role=current_user.role_id, error_type=error_type)

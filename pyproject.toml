@@ -19,6 +19,7 @@ dependencies = [
     "python-jose>=3.5.0",
     "python-multipart>=0.0.20",
     "redis>=6.2.0",
+    "sentry-sdk[fastapi]>=2.30.0",
     "sqlalchemy>=2.0.41",
     "twilio>=9.6.3",
     "uvicorn>=0.34.3",
