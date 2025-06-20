@@ -57,7 +57,7 @@ async def get_current_user_info(
     if user_id is None or role is None:
         raise credentials_exception
 
-    return {"id": user_id, "role": role}
+    return {"id": int(user_id), "role": role}
 
 
 async def get_current_user_optional(
@@ -75,7 +75,7 @@ async def get_current_user_optional(
     role = payload.get("role")
     if user_id is None or role is None:
         return None
-    return {"id": user_id, "role": role}
+    return {"id": int(user_id), "role": role}
 
 
 async def get_current_barber_id(

@@ -1,0 +1,92 @@
+version: "3.8"
+
+services:
+  migrator:
+    build: .
+    container_name: barbershop_migrator
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    entrypoint: ["/app/scripts/initialize.sh"]
+    networks:
+      - backend
+
+  fastapi:
+    build: .
+    container_name: barbershop_app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+      - migrator
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/app/app
+      - ./scripts:/app/scripts
+      - ./alembic.ini:/app/alembic.ini
+      - ./alembic:/app/alembic
+    networks:
+      - backend
+  worker:
+    build: .
+    container_name: barbershop_worker
+    command: celery -A app.utils.celery_tasks.sms worker --loglevel=info
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    container_name: barbershop_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+  postgres:
+    image: postgres:16-alpine
+    container_name: barbershop_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - backend
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    networks:
+      - backend
+
+networks:
+  backend:
+
+volumes:
+  postgres_data:

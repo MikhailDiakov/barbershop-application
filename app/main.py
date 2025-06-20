@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi_limiter import FastAPILimiter
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
+from starlette_exporter import PrometheusMiddleware, handle_metrics
 
 from app.api.routes import appointments, barbers, review, users
 from app.api.routes.admin import admin_router
@@ -23,6 +24,10 @@ sentry_sdk.init(
 
 app = FastAPI()
 
+app.add_middleware(PrometheusMiddleware)
+
+app.add_route("/metrics", handle_metrics)
+
 
 @app.on_event("startup")
 async def startup():
@@ -37,5 +42,6 @@ app.include_router(barbers.router, prefix="/barber", tags=["barbers"])
 app.include_router(appointments.router, prefix="/appointments", tags=["appointments"])
 app.include_router(review.router, prefix="/review", tags=["review"])
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
+app.include_router(superadmin_router, prefix="/superadmin", tags=["superadmin"])
 app.include_router(superadmin_router, prefix="/superadmin", tags=["superadmin"])
 app.include_router(superadmin_router, prefix="/superadmin", tags=["superadmin"])

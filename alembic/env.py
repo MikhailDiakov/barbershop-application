@@ -28,10 +28,6 @@ target_metadata = Base.metadata
 # ... etc.
 
 
-def get_url():
-    return settings.DB_URL_SYNC
-
-
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
