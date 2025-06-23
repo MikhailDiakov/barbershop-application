@@ -22,6 +22,8 @@ services:
       - redis
       - postgres
       - migrator
+      - elasticsearch
+      - kibana
     ports:
       - "8000:8000"
     volumes:
@@ -89,6 +91,26 @@ services:
       - grafana_data:/var/lib/grafana
     networks:
       - backend
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    networks:
+      - backend
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.0
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - backend
 
 networks:
   backend:
@@ -98,3 +120,4 @@ volumes:
   redis_data:
   prometheus_data:
   grafana_data:
+  esdata:

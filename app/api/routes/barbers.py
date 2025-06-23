@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_barber_id, get_current_user_info, get_session
+from app.api.deps import get_current_user_info, get_session
 from app.schemas.barber import BarberOut, BarberUpdate
 from app.schemas.barber_schedule import (
     BarberScheduleCreate,
@@ -26,21 +26,21 @@ router = APIRouter()
 async def create_my_schedule(
     data: BarberScheduleCreate,
     db: AsyncSession = Depends(get_session),
-    barber_id: int = Depends(get_current_barber_id),
     current_user=Depends(get_current_user_info),
 ):
     return await create_schedule(
-        db, barber_id=barber_id, data=data, role=current_user["role"]
+        db, user_id=current_user["id"], data=data, role=current_user["role"]
     )
 
 
 @router.get("/schedules/", response_model=list[BarberScheduleOut])
 async def get_my_schedules(
     db: AsyncSession = Depends(get_session),
-    barber_id: int = Depends(get_current_barber_id),
     current_user=Depends(get_current_user_info),
 ):
-    return await get_my_schedule(db, barber_id=barber_id, role=current_user["role"])
+    return await get_my_schedule(
+        db, user_id=current_user["id"], role=current_user["role"]
+    )
 
 
 @router.put("/schedules/{schedule_id}", response_model=BarberScheduleOut)
@@ -48,13 +48,12 @@ async def update_my_schedule(
     schedule_id: int,
     data: BarberScheduleUpdate,
     db: AsyncSession = Depends(get_session),
-    barber_id: int = Depends(get_current_barber_id),
     current_user=Depends(get_current_user_info),
 ):
     return await update_schedule(
         db,
         schedule_id,
-        barber_id=barber_id,
+        user_id=current_user["id"],
         data=data,
         role=current_user["role"],
     )
@@ -64,31 +63,32 @@ async def update_my_schedule(
 async def delete_my_schedule(
     schedule_id: int,
     db: AsyncSession = Depends(get_session),
-    barber_id: int = Depends(get_current_barber_id),
     current_user=Depends(get_current_user_info),
 ):
     return await delete_schedule(
-        db, schedule_id, barber_id=barber_id, role=current_user["role"]
+        db, schedule_id, user_id=current_user["id"], role=current_user["role"]
     )
 
 
 @router.get("/me", response_model=BarberOut)
 async def get_my_barber_profile(
     db: AsyncSession = Depends(get_session),
-    barber_id: int = Depends(get_current_barber_id),
     current_user=Depends(get_current_user_info),
 ):
-    return await get_my_barber_by_id(db, barber_id, role=current_user["role"])
+    return await get_my_barber_by_id(
+        db, user_id=current_user["id"], role=current_user["role"]
+    )
 
 
 @router.put("/me", response_model=BarberOut)
 async def update_my_barber_profile(
     data: BarberUpdate,
     db: AsyncSession = Depends(get_session),
-    barber_id: int = Depends(get_current_barber_id),
     current_user=Depends(get_current_user_info),
 ):
-    return await update_my_barber(db, barber_id, data, role=current_user["role"])
+    return await update_my_barber(
+        db, data, user_id=current_user["id"], role=current_user["role"]
+    )
 
 
 @router.post("/avatar")
@@ -98,7 +98,7 @@ async def upload_own_avatar(
     current_user=Depends(get_current_user_info),
 ):
     barber = await upload_barber_photo(
-        db=db, barber_id=current_user["id"], file=file, user_role=current_user["role"]
+        db=db, user_id=current_user["id"], file=file, user_role=current_user["role"]
     )
     return {"avatar_url": barber.avatar_url}
 
@@ -110,7 +110,7 @@ async def delete_own_avatar(
 ):
     await remove_barber_photo(
         db=db,
-        barber_id=current_user["id"],
+        user_id=current_user["id"],
         user_role=current_user["role"],
     )
     return {"detail": "Avatar deleted"}

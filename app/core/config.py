@@ -42,5 +42,8 @@ class Settings:
     # Sentry
     SENTRY_DSN: str = os.getenv("SENTRY_DSN", "")
 
+    # Elasticsearch
+    ELASTICSEARCH_URL: str = os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
+
 
 settings = Settings()

@@ -5,6 +5,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import HTTPException, status
 
 from app.core.config import settings
+from app.utils.logger import logger
 
 s3_client = boto3.client(
     "s3",
@@ -27,7 +28,9 @@ async def upload_file_to_s3(file_bytes: bytes, filename: str, content_type: str)
             ContentType=content_type,
             ACL="public-read",
         )
+        logger.info(f"File uploaded to S3: key={unique_filename} filename={filename}")
     except (BotoCoreError, ClientError) as e:
+        logger.error(f"Failed to upload file to S3: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to upload file to S3: {str(e)}",
@@ -39,7 +42,9 @@ async def upload_file_to_s3(file_bytes: bytes, filename: str, content_type: str)
 async def delete_file_from_s3(file_key: str):
     try:
         s3_client.delete_object(Bucket=BUCKET, Key=file_key)
+        logger.info(f"File deleted from S3: key={file_key}")
     except (BotoCoreError, ClientError) as e:
+        logger.error(f"Failed to delete file from S3: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete file from S3: {str(e)}",

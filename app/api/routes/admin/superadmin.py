@@ -70,4 +70,4 @@ async def debug_error_route(
     Trigger a debug error to test Sentry. Only for superadmin.
     error_type options: zero_division | runtime | http_403 | custom
     """
-    raise_fake_error(current_user_role=current_user.role_id, error_type=error_type)
+    raise_fake_error(current_user_role=current_user["role"], error_type=error_type)

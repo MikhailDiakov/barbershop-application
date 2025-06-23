@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_session
+from app.api.deps import get_current_user_info, get_session
 from app.core.security import create_access_token
 from app.schemas.token import Token
 from app.schemas.user import (
@@ -17,6 +17,7 @@ from app.services.user_service import (
     authenticate_user,
     confirm_password_reset,
     create_user,
+    get_user_profile,
     send_password_reset_code,
     update_user_profile,
 )
@@ -53,21 +54,22 @@ async def login(
 
 @router.get("/me", response_model=UserRead)
 async def get_my_user(
-    current_user=Depends(get_current_user),
+    current_user=Depends(get_current_user_info),
+    db: AsyncSession = Depends(get_session),
 ):
-    return current_user
+    return await get_user_profile(db, current_user["id"])
 
 
 @router.put("/me/update", response_model=UserRead)
 async def update_my_profile(
     data: UserProfileUpdate,
-    current_user=Depends(get_current_user),
+    current_user=Depends(get_current_user_info),
     db: AsyncSession = Depends(get_session),
 ):
     try:
         user = await update_user_profile(
             db=db,
-            user_id=current_user.id,
+            user_id=current_user["id"],
             phone=data.phone,
             old_password=data.old_password,
             new_password=data.new_password,

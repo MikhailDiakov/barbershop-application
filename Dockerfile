@@ -19,6 +19,7 @@ RUN uv sync --frozen --no-install-project
 COPY ./app /app/app
 COPY ./scripts /app/scripts
 COPY ./alembic.ini /app/
+COPY ./alembic /app/alembic
 
 RUN uv sync
 
