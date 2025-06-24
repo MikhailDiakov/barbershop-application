@@ -19,7 +19,11 @@ async def list_admins(
     db: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user_info),
 ):
-    return await get_all_admins(db, current_user["role"])
+    return await get_all_admins(
+        db,
+        current_user["role"],
+        admin_id=current_user["id"],
+    )
 
 
 @router.get("/admins/{admin_id}", response_model=AdminOut)
@@ -28,7 +32,12 @@ async def get_admin(
     db: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user_info),
 ):
-    return await get_admin_by_id(db, admin_id, current_user["role"])
+    return await get_admin_by_id(
+        db,
+        admin_id,
+        current_user["role"],
+        admin_id=current_user["id"],
+    )
 
 
 @router.post("/users/{user_id}/promote", response_model=UserRead)

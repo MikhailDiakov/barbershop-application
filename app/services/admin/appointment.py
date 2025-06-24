@@ -19,12 +19,14 @@ async def admin_get_appointments_service(
     skip: int,
     limit: int,
     role: str,
+    admin_id: int,
 ):
     ensure_admin(role)
 
     logger.info(
         "Admin fetching appointments",
         extra={
+            "admin_id": admin_id,
             "upcoming_only": upcoming_only,
             "skip": skip,
             "limit": limit,
@@ -37,38 +39,47 @@ async def admin_get_appointments_service(
         now = datetime.utcnow()
         query = query.where(Appointment.appointment_time >= now)
     query = query.offset(skip).limit(limit).order_by(Appointment.appointment_time.asc())
+
     result = await db.execute(query)
     appointments = result.scalars().all()
 
     logger.info(
         "Admin fetched appointments",
-        extra={"count": len(appointments), "upcoming_only": upcoming_only},
+        extra={
+            "admin_id": admin_id,
+            "count": len(appointments),
+            "upcoming_only": upcoming_only,
+        },
     )
     return appointments
 
 
 async def admin_create_appointment_service(
-    db: AsyncSession, data: AppointmentCreate, role: str
+    db: AsyncSession, data: AppointmentCreate, role: str, admin_id: int
 ):
     ensure_admin(role)
 
     logger.info(
         "Admin attempt to create appointment",
-        extra={"barber_id": data.barber_id, "schedule_id": data.schedule_id},
+        extra={
+            "admin_id": admin_id,
+            "barber_id": data.barber_id,
+            "schedule_id": data.schedule_id,
+        },
     )
 
     schedule = await get_schedule_by_id_simple(db, data.schedule_id)
     if not schedule or not schedule.is_active:
         logger.warning(
             "Schedule not available for admin appointment",
-            extra={"schedule_id": data.schedule_id},
+            extra={"schedule_id": data.schedule_id, "admin_id": admin_id},
         )
         raise HTTPException(400, "Selected time slot is not available")
 
     if not data.client_name or not data.client_phone:
         logger.warning(
             "Missing name or phone for admin appointment",
-            extra={"schedule_id": data.schedule_id},
+            extra={"schedule_id": data.schedule_id, "admin_id": admin_id},
         )
         raise HTTPException(400, "Name and phone required for admin booking")
 
@@ -92,6 +103,7 @@ async def admin_create_appointment_service(
     logger.info(
         "Admin created appointment",
         extra={
+            "admin_id": admin_id,
             "appointment_id": appointment.id,
             "barber_id": data.barber_id,
             "client_name": data.client_name,
@@ -108,7 +120,10 @@ async def admin_create_appointment_service(
         ),
     )
 
-    logger.info("Confirmation SMS sent", extra={"appointment_id": appointment.id})
+    logger.info(
+        "Confirmation SMS sent",
+        extra={"appointment_id": appointment.id, "admin_id": admin_id},
+    )
 
     now = datetime.utcnow()
     remind_time = appointment_dt - timedelta(hours=2)
@@ -126,6 +141,7 @@ async def admin_create_appointment_service(
         logger.info(
             "Reminder SMS scheduled",
             extra={
+                "admin_id": admin_id,
                 "client_phone": data.client_phone,
                 "reminder_in_seconds": round(seconds_until_reminder),
             },
@@ -138,11 +154,12 @@ async def admin_delete_appointment_service(
     db: AsyncSession,
     appointment_id: int,
     role: str,
+    admin_id: int,
 ):
     ensure_admin(role)
     logger.info(
         "Admin attempt to delete appointment",
-        extra={"appointment_id": appointment_id, "role": role},
+        extra={"appointment_id": appointment_id, "role": role, "admin_id": admin_id},
     )
 
     result = await db.execute(
@@ -153,7 +170,7 @@ async def admin_delete_appointment_service(
     if not appointment:
         logger.warning(
             "Appointment not found for deletion",
-            extra={"appointment_id": appointment_id},
+            extra={"appointment_id": appointment_id, "admin_id": admin_id},
         )
         raise HTTPException(status_code=404, detail="Appointment not found")
 
@@ -168,6 +185,7 @@ async def admin_delete_appointment_service(
             extra={
                 "appointment_id": appointment_id,
                 "schedule_id": appointment.schedule_id,
+                "admin_id": admin_id,
             },
         )
         raise HTTPException(status_code=404, detail="Related schedule not found")
@@ -184,5 +202,6 @@ async def admin_delete_appointment_service(
             "appointment_id": appointment.id,
             "schedule_id": schedule.id,
             "barber_id": appointment.barber_id,
+            "admin_id": admin_id,
         },
     )

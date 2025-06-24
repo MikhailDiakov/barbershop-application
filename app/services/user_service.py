@@ -26,12 +26,18 @@ async def create_user(
 ) -> User:
     existing_user = await get_user_by_username(db, username)
     if existing_user:
-        logger.warning("User creation failed: username '%s' already exists", username)
+        logger.warning(
+            "User creation failed: username already exists",
+            extra={"action": "create_user", "username": username},
+        )
         raise HTTPException(status_code=400, detail="Username already registered")
 
     existing_phone = await get_user_by_phone(db, phone)
     if existing_phone:
-        logger.warning("User creation failed: phone '%s' already exists", phone)
+        logger.warning(
+            "User creation failed: phone already exists",
+            extra={"action": "create_user", "phone": phone},
+        )
         raise HTTPException(status_code=400, detail="Phone number already registered")
 
     hashed_password = get_password_hash(password)
@@ -43,7 +49,14 @@ async def create_user(
     await db.refresh(user)
 
     logger.info(
-        "User created: username=%s phone=%s role_id=%d", username, phone, role_id
+        "User created",
+        extra={
+            "action": "create_user",
+            "username": username,
+            "phone": phone,
+            "role_id": role_id,
+            "user_id": user.id,
+        },
     )
 
     return user
@@ -54,12 +67,16 @@ async def authenticate_user(
 ) -> User | None:
     user = await get_user_by_username(db, username)
     if not user or not verify_password(password, user.hashed_password):
-        logger.warning("Login failed: invalid credentials for username=%s", username)
+        logger.warning(
+            "Login failed: invalid credentials",
+            extra={"action": "login", "username": username},
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
         )
     logger.info(
-        "User authenticated successfully: username=%s user_id=%s", username, user.id
+        "User authenticated successfully",
+        extra={"action": "login", "username": username, "user_id": user.id},
     )
     return user
 
@@ -67,9 +84,18 @@ async def authenticate_user(
 async def get_user_profile(db: AsyncSession, user_id: int) -> User:
     user = await get_user_by_id(db, user_id)
     if user is None:
+        logger.warning(
+            "User profile fetch failed: user not found",
+            extra={"action": "get_user_profile", "user_id": user_id},
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
+
+    logger.info(
+        "User profile fetched successfully",
+        extra={"action": "get_user_profile", "user_id": user_id},
+    )
     return user
 
 
@@ -84,7 +110,8 @@ async def update_user_profile(
     user = await get_user_by_id(db, user_id)
     if not user:
         logger.warning(
-            "User profile update failed: user not found, user_id=%s", user_id
+            "User profile update failed: user not found",
+            extra={"action": "update_profile", "user_id": user_id},
         )
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -92,36 +119,45 @@ async def update_user_profile(
         existing = await get_user_by_phone(db, phone)
         if existing and existing.id != user_id:
             logger.warning(
-                "User profile update failed: phone already in use, user_id=%s phone=%s",
-                user_id,
-                phone,
+                "User profile update failed: phone already in use",
+                extra={"action": "update_profile", "user_id": user_id, "phone": phone},
             )
             raise HTTPException(status_code=400, detail="Phone already in use")
         if not old_password or not verify_password(old_password, user.hashed_password):
             logger.warning(
-                "User profile update failed: password required to change phone, user_id=%s",
-                user_id,
+                "User profile update failed: password required to change phone",
+                extra={"action": "update_profile", "user_id": user_id, "phone": phone},
             )
             raise HTTPException(
                 status_code=400, detail="Password required to change phone"
             )
         user.phone = phone
-        logger.info("User phone updated: user_id=%s new_phone=%s", user_id, phone)
+        logger.info(
+            "User phone updated",
+            extra={"action": "update_profile", "user_id": user_id, "new_phone": phone},
+        )
 
     if new_password:
         if not old_password or not verify_password(old_password, user.hashed_password):
             logger.warning(
-                "User profile update failed: old password incorrect, user_id=%s",
-                user_id,
+                "User profile update failed: old password incorrect",
+                extra={"action": "update_profile", "user_id": user_id},
             )
             raise HTTPException(status_code=400, detail="Old password is incorrect")
         user.hashed_password = get_password_hash(new_password)
-        logger.info("User password updated: user_id=%s", user_id)
+        logger.info(
+            "User password updated",
+            extra={"action": "update_profile", "user_id": user_id},
+        )
 
     await db.commit()
     await db.refresh(user)
 
-    logger.info("User profile updated successfully: user_id=%s", user_id)
+    logger.info(
+        "User profile updated successfully",
+        extra={"action": "update_profile", "user_id": user_id},
+    )
+
     return user
 
 
@@ -129,13 +165,15 @@ async def send_password_reset_code(db: AsyncSession, phone: str):
     user = await get_user_by_phone(db, phone)
     if not user:
         logger.warning(
-            "Password reset code request failed: user not found, phone=%s", phone
+            "Password reset code request failed: user not found",
+            extra={"action": "send_reset_code", "phone": phone},
         )
         return
     can_request = await can_request_code(phone)
     if not can_request:
         logger.warning(
-            "Password reset code request throttled: too many requests, phone=%s", phone
+            "Password reset code request throttled: too many requests",
+            extra={"action": "send_reset_code", "phone": phone},
         )
         raise HTTPException(
             status_code=429, detail="Too many requests, please wait before retrying."
@@ -146,7 +184,9 @@ async def send_password_reset_code(db: AsyncSession, phone: str):
         phone,
         f"Your reset code is: {code}. The code will become invalid in 15 minutes.",
     )
-    logger.info("Password reset code sent: phone=%s", phone)
+    logger.info(
+        "Password reset code sent", extra={"action": "send_reset_code", "phone": phone}
+    )
 
 
 async def confirm_password_reset(
@@ -155,15 +195,17 @@ async def confirm_password_reset(
     user = await get_user_by_phone(db, phone)
     if not user:
         logger.warning(
-            "Password reset confirmation failed: user not found, phone=%s", phone
+            "Password reset confirmation failed: user not found",
+            extra={"action": "confirm_reset_code", "phone": phone},
         )
+
         raise HTTPException(status_code=404, detail="User not found")
 
     saved_code = await get_verification_code(phone)
     if saved_code != code:
         logger.warning(
-            "Password reset confirmation failed: invalid or expired code, phone=%s",
-            phone,
+            "Password reset confirmation failed: invalid or expired code",
+            extra={"action": "confirm_reset_code", "phone": phone},
         )
         raise HTTPException(status_code=400, detail="Invalid or expired code")
 
@@ -172,5 +214,8 @@ async def confirm_password_reset(
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    logger.info("Password reset successful: user_id=%s phone=%s", user.id, phone)
+    logger.info(
+        "Password reset successful",
+        extra={"action": "confirm_reset_code", "user_id": user.id, "phone": phone},
+    )
     return user

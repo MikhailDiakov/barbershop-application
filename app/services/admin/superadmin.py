@@ -9,9 +9,15 @@ from app.utils.logger import logger
 from app.utils.selectors.user import get_user_by_id
 
 
-async def get_all_admins(db: AsyncSession, current_user_role: str) -> list[User]:
+async def get_all_admins(
+    db: AsyncSession,
+    current_user_role: str,
+    admin_id: int,
+) -> list[User]:
     ensure_superadmin(current_user_role)
-    logger.info("Fetching all admins", extra={"role": current_user_role})
+    logger.info(
+        "Fetching all admins", extra={"admin_id": admin_id, "role": current_user_role}
+    )
 
     result = await db.execute(
         select(User).where(
@@ -19,15 +25,24 @@ async def get_all_admins(db: AsyncSession, current_user_role: str) -> list[User]
         )
     )
     admins = result.scalars().all()
-    logger.info("Fetched all admins", extra={"count": len(admins)})
+
+    logger.info(
+        "Fetched all admins", extra={"admin_id": admin_id, "count": len(admins)}
+    )
     return admins
 
 
 async def get_admin_by_id(
-    db: AsyncSession, admin_id: int, current_user_role: str
+    db: AsyncSession,
+    admin_id: int,
+    current_user_role: str,
+    requester_id: int,
 ) -> User:
     ensure_superadmin(current_user_role)
-    logger.info("Fetching admin by ID", extra={"admin_id": admin_id})
+    logger.info(
+        "Fetching admin by ID",
+        extra={"requester_id": requester_id, "admin_id": admin_id},
+    )
 
     result = await db.execute(
         select(User).where(
@@ -37,11 +52,17 @@ async def get_admin_by_id(
     )
     admin = result.scalars().first()
     if not admin:
+        logger.warning(
+            "Admin not found",
+            extra={"requester_id": requester_id, "admin_id": admin_id},
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Admin not found"
         )
 
-    logger.info("Admin fetched", extra={"admin_id": admin.id})
+    logger.info(
+        "Admin fetched", extra={"requester_id": requester_id, "admin_id": admin.id}
+    )
     return admin
 
 

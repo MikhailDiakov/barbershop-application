@@ -21,6 +21,7 @@ from app.utils.selectors.user import (
 async def get_users(
     db: AsyncSession,
     user_role: str,
+    admin_id: int,
     skip: int = 0,
     limit: int = 10,
     username_filter: Optional[str] = None,
@@ -30,6 +31,7 @@ async def get_users(
         "Fetching users",
         extra={
             "role": user_role,
+            "admin_id": admin_id,
             "skip": skip,
             "limit": limit,
             "username_filter": username_filter,
@@ -44,15 +46,29 @@ async def get_users(
     result = await db.execute(query)
     users = result.scalars().all()
 
-    logger.info("Users fetched", extra={"count": len(users)})
+    logger.info(
+        "Users fetched",
+        extra={
+            "action": "get_users",
+            "admin_id": admin_id,
+            "count": len(users),
+        },
+    )
     return users
 
 
-async def update_user(db: AsyncSession, user_id: int, data: dict, user_role: str):
+async def update_user(
+    db: AsyncSession,
+    user_id: int,
+    data: dict,
+    user_role: str,
+    admin_id: int,
+):
     ensure_admin(user_role)
     logger.info(
         "Attempting to update user",
         extra={
+            "admin_id": admin_id,
             "admin_role": user_role,
             "target_user_id": user_id,
             "fields": list(data.keys()),
@@ -61,7 +77,10 @@ async def update_user(db: AsyncSession, user_id: int, data: dict, user_role: str
 
     user = await get_user_by_id(db, user_id)
     if not user:
-        logger.warning("User not found for update", extra={"user_id": user_id})
+        logger.warning(
+            "User not found for update",
+            extra={"admin_id": admin_id, "user_id": user_id},
+        )
         raise HTTPException(status_code=404, detail="User not found")
 
     if int(user_role) == RoleEnum.ADMIN.value and user.role_id in (
@@ -106,19 +125,31 @@ async def update_user(db: AsyncSession, user_id: int, data: dict, user_role: str
     await db.commit()
     await db.refresh(user)
 
-    logger.info("User updated", extra={"user_id": user.id})
+    logger.info(
+        "User updated",
+        extra={"admin_id": admin_id, "user_id": user.id},
+    )
     return user
 
 
-async def delete_user(db: AsyncSession, user_id: int, user_role: str):
+async def delete_user(
+    db: AsyncSession,
+    user_id: int,
+    user_role: str,
+    admin_id: int,
+):
     ensure_admin(user_role)
     logger.info(
-        "Attempting to delete user", extra={"user_id": user_id, "admin_role": user_role}
+        "Attempting to delete user",
+        extra={"admin_id": admin_id, "user_id": user_id, "admin_role": user_role},
     )
 
     user = await get_user_by_id(db, user_id)
     if not user:
-        logger.warning("User not found for deletion", extra={"user_id": user_id})
+        logger.warning(
+            "User not found for deletion",
+            extra={"admin_id": admin_id, "user_id": user_id},
+        )
         raise HTTPException(status_code=404, detail="User not found")
 
     if user.role_id in (RoleEnum.SUPERADMIN.value, RoleEnum.ADMIN.value):
@@ -130,26 +161,36 @@ async def delete_user(db: AsyncSession, user_id: int, user_role: str):
     if user.role_id == RoleEnum.BARBER.value:
         barber = await get_barber_by_user_id(db, user_id)
         if barber:
-            logger.info("Deleting associated barber", extra={"barber_id": barber.id})
+            logger.info(
+                "Deleting associated barber",
+                extra={"admin_id": admin_id, "barber_id": barber.id},
+            )
             await db.delete(barber)
 
     await db.delete(user)
     await db.commit()
-    logger.info("User deleted", extra={"user_id": user_id})
+    logger.info("User deleted", extra={"admin_id": admin_id, "user_id": user_id})
 
 
 async def promote_user_to_barber(
-    db: AsyncSession, user_id: int, user_role: str, full_name: str
+    db: AsyncSession,
+    user_id: int,
+    user_role: str,
+    full_name: str,
+    admin_id: int,
 ):
     ensure_admin(user_role)
     logger.info(
         "Attempting to promote user to barber",
-        extra={"user_id": user_id, "admin_role": user_role},
+        extra={"admin_id": admin_id, "user_id": user_id, "admin_role": user_role},
     )
 
     user = await get_user_by_id(db, user_id)
     if not user:
-        logger.warning("User not found for promotion", extra={"user_id": user_id})
+        logger.warning(
+            "User not found for promotion",
+            extra={"admin_id": admin_id, "user_id": user_id},
+        )
         raise HTTPException(status_code=404, detail="User not found")
 
     if user.role_id in (RoleEnum.ADMIN.value, RoleEnum.SUPERADMIN.value):
@@ -168,6 +209,7 @@ async def promote_user_to_barber(
     await db.refresh(user)
 
     logger.info(
-        "User promoted to barber", extra={"user_id": user.id, "barber_id": barber.id}
+        "User promoted to barber",
+        extra={"admin_id": admin_id, "user_id": user.id, "barber_id": barber.id},
     )
     return user

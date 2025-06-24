@@ -19,7 +19,12 @@ async def create_review_service(
     barber = await get_barber_by_id(db, review_in.barber_id)
     if barber is None:
         logger.warning(
-            f"Failed to create review: barber not found, barber_id={review_in.barber_id}, user_id={current_user['id']}"
+            "Failed to create review: barber not found",
+            extra={
+                "action": "create_review",
+                "barber_id": review_in.barber_id,
+                "user_id": current_user["id"],
+            },
         )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Barber not found"
@@ -38,7 +43,14 @@ async def create_review_service(
     await db.refresh(new_review)
 
     logger.info(
-        f"Review created (pending approval): review_id={new_review.id}, barber_id={new_review.barber_id}, user_id={new_review.client_id}, rating={new_review.rating}"
+        "Review created (pending approval)",
+        extra={
+            "action": "create_review",
+            "review_id": new_review.id,
+            "barber_id": new_review.barber_id,
+            "user_id": new_review.client_id,
+            "rating": new_review.rating,
+        },
     )
 
     return new_review
@@ -58,5 +70,17 @@ async def get_reviews_by_user_service(
         .limit(limit)
     )
     result = await db.execute(stmt)
-    return result.scalars().all()
-    return result.scalars().all()
+    reviews = result.scalars().all()
+
+    logger.info(
+        "Fetched reviews by user",
+        extra={
+            "action": "get_reviews_by_user",
+            "user_id": int(user_id),
+            "skip": skip,
+            "limit": limit,
+            "review_count": len(reviews),
+        },
+    )
+
+    return reviews

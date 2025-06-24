@@ -42,7 +42,11 @@ async def upload_barber_photo(
     if not file.content_type.startswith("image/"):
         logger.warning(
             "Upload failed: non-image file",
-            extra={"filename": file.filename, "content_type": file.content_type},
+            extra={
+                "filename": file.filename,
+                "content_type": file.content_type,
+                "user_id": user_id,
+            },
         )
         raise HTTPException(status_code=400, detail="Only image files are allowed")
 

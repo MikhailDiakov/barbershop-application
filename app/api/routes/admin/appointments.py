@@ -21,7 +21,12 @@ async def admin_get_appointments_route(
     current_user=Depends(get_current_user_info),
 ):
     return await admin_get_appointments_service(
-        db, upcoming_only, skip, limit, current_user["role"]
+        db,
+        upcoming_only,
+        skip,
+        limit,
+        current_user["role"],
+        admin_id=current_user["id"],
     )
 
 
@@ -31,7 +36,12 @@ async def admin_create_appointment_route(
     db: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user_info),
 ):
-    return await admin_create_appointment_service(db, data, current_user["role"])
+    return await admin_create_appointment_service(
+        db,
+        data,
+        current_user["role"],
+        admin_id=current_user["id"],
+    )
 
 
 @router.delete("/{appointment_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -40,4 +50,9 @@ async def admin_delete_appointment_route(
     db: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user_info),
 ):
-    await admin_delete_appointment_service(db, appointment_id, current_user["role"])
+    await admin_delete_appointment_service(
+        db,
+        appointment_id,
+        current_user["role"],
+        admin_id=current_user["id"],
+    )

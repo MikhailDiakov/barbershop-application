@@ -25,7 +25,12 @@ async def list_users(
     current_user=Depends(get_current_user_info),
 ):
     return await get_users(
-        db, current_user["role"], skip=skip, limit=limit, username_filter=username
+        db,
+        current_user["role"],
+        admin_id=current_user["id"],
+        skip=skip,
+        limit=limit,
+        username_filter=username,
     )
 
 
@@ -35,7 +40,12 @@ async def get_user(
     db: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user_info),
 ):
-    return await get_user_by_id(db, user_id, current_user["role"])
+    return await get_user_by_id(
+        db,
+        user_id,
+        current_user["role"],
+        admin_id=current_user["id"],
+    )
 
 
 @router.put("/{user_id}", response_model=UserRead)
@@ -46,7 +56,11 @@ async def update_user_data(
     current_user=Depends(get_current_user_info),
 ):
     return await update_user(
-        db, user_id, data.dict(exclude_unset=True), current_user["role"]
+        db,
+        user_id,
+        data.dict(exclude_unset=True),
+        current_user["role"],
+        admin_id=current_user["id"],
     )
 
 
@@ -56,7 +70,12 @@ async def delete_user_route(
     db: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user_info),
 ):
-    await delete_user(db, user_id, current_user["role"])
+    await delete_user(
+        db,
+        user_id,
+        current_user["role"],
+        admin_id=current_user["id"],
+    )
 
 
 @router.post(
@@ -71,6 +90,10 @@ async def promote_user_to_barber_route(
     current_user=Depends(get_current_user_info),
 ):
     updated_user = await promote_user_to_barber(
-        db, user_id, current_user["role"], data.full_name
+        db,
+        user_id,
+        current_user["role"],
+        data.full_name,
+        admin_id=current_user["id"],
     )
     return updated_user

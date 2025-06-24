@@ -19,7 +19,10 @@ async def list_reviews(
     current_user=Depends(get_current_user_info),
 ):
     return await get_all_reviews_service(
-        db=db, user_role=current_user["role"], only_unapproved=only_unapproved
+        db=db,
+        user_role=current_user["role"],
+        only_unapproved=only_unapproved,
+        admin_id=current_user["id"],
     )
 
 
@@ -29,7 +32,12 @@ async def approve_review(
     db: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user_info),
 ):
-    return await approve_review_service(db, review_id, current_user["role"])
+    return await approve_review_service(
+        db,
+        review_id,
+        current_user["role"],
+        admin_id=current_user["id"],
+    )
 
 
 @router.delete("/{review_id}")
@@ -38,5 +46,10 @@ async def delete_review(
     db: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user_info),
 ):
-    await delete_review_service(db, review_id, current_user["role"])
+    await delete_review_service(
+        db,
+        review_id,
+        current_user["role"],
+        admin_id=current_user["id"],
+    )
     return {"detail": "Review deleted"}
