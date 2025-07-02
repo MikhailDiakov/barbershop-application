@@ -6,7 +6,7 @@ from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from starlette_exporter import PrometheusMiddleware, handle_metrics
 
-from app.api.routes import appointments, barbers, review, users
+from app.api.routes import ai_assistant, appointments, barbers, review, users
 from app.api.routes.admin import admin_router
 from app.api.routes.admin.superadmin import router as superadmin_router
 from app.core.config import settings
@@ -49,5 +49,6 @@ app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(barbers.router, prefix="/barber", tags=["barbers"])
 app.include_router(appointments.router, prefix="/appointments", tags=["appointments"])
 app.include_router(review.router, prefix="/review", tags=["review"])
+app.include_router(ai_assistant.router, prefix="/ai-assistant", tags=["AI Assistant"])
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
 app.include_router(superadmin_router, prefix="/superadmin", tags=["superadmin"])

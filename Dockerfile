@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-RUN apt-get update && apt-get upgrade -y && apt-get clean
+RUN apt-get update && apt-get install -y curl && apt-get upgrade -y && apt-get clean
 
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app/
@@ -17,6 +17,7 @@ COPY pyproject.toml uv.lock /app/
 RUN uv sync --frozen --no-install-project
 
 COPY ./app /app/app
+COPY ./data /app/data
 COPY ./scripts /app/scripts
 COPY ./alembic.ini /app/
 COPY ./alembic /app/alembic
@@ -25,4 +26,5 @@ RUN uv sync
 
 ENV PYTHONPATH=/app
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["bash", "-c", "/app/scripts/wait-for-service.sh elasticsearch 9200 && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4"]
+

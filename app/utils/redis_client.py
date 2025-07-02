@@ -1,4 +1,7 @@
+import json
+
 import redis.asyncio as redis
+import yaml
 
 from app.core.config import settings
 from app.utils.logger import logger
@@ -76,3 +79,36 @@ async def delete_barber_rating(barber_id: int):
     key = f"barber_rating:{barber_id}"
     await redis_client.delete(key)
     logger.info(f"Deleted cached barber rating for barber_id={barber_id}")
+
+
+BARBERSHOP_INFO_KEY = "barbershop_info"
+BARBERSHOP_INFO_EXPIRE = 3600
+
+
+async def load_barbershop_info_from_redis() -> dict | None:
+    cached = await redis_client.get(BARBERSHOP_INFO_KEY)
+    if cached:
+        logger.debug("Loaded barbershop info from Redis cache")
+        return json.loads(cached)
+    return None
+
+
+async def save_barbershop_info_to_redis(data: dict):
+    await redis_client.set(
+        BARBERSHOP_INFO_KEY, json.dumps(data), ex=BARBERSHOP_INFO_EXPIRE
+    )
+    logger.info(
+        f"Saved barbershop info to Redis cache with expiry {BARBERSHOP_INFO_EXPIRE}s"
+    )
+
+
+async def load_barbershop_info(path: str = "data/barbershop_info.yaml") -> dict:
+    cached = await load_barbershop_info_from_redis()
+    if cached:
+        return cached
+
+    with open(path, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+
+    await save_barbershop_info_to_redis(data)
+    return data

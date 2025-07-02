@@ -19,8 +19,6 @@ services:
     env_file:
       - .env
     depends_on:
-      - redis
-      - postgres
       - migrator
       - elasticsearch
       - kibana
@@ -31,6 +29,7 @@ services:
       - ./scripts:/app/scripts
       - ./alembic.ini:/app/alembic.ini
       - ./alembic:/app/alembic
+      - ./data:/app/data
     networks:
       - backend
   worker:

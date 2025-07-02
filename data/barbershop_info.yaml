@@ -1,0 +1,14 @@
+address: "12 Example St, Kyiv"
+working_hours: "10:00 - 20:00, every day"
+services:
+  - Fades
+  - Beard trims
+  - Classic cuts
+  - Shaves
+  - Hair coloring
+description: >
+  We are a premium barbershop in the heart of Kyiv.
+  Our expert barbers deliver top-quality service in a relaxing atmosphere.
+notes: >
+  To view all barbers, their availability, and to book an appointment — 
+  please use the dedicated endpoints in the app or visit the schedule section.
