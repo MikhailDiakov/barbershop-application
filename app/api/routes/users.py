@@ -35,10 +35,14 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_session))
     return user
 
 
+def get_login_rate_limiter():
+    return RateLimiter(times=5, seconds=60)
+
+
 @router.post(
     "/login",
     response_model=Token,
-    dependencies=[Depends(RateLimiter(times=5, seconds=60))],
+    dependencies=[Depends(get_login_rate_limiter)],
 )
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),

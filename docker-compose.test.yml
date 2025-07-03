@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  redis_test:
+    image: redis:7-alpine
+    container_name: barbershop_redis_test
+    ports:
+      - "6379:6379"
+    networks:
+      - backend_test
+
+  app_test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: barbershop_test_runner
+    env_file:
+      - .env
+    environment:
+      REDIS_URL: redis://barbershop_redis_test:6379/0
+    depends_on:
+      - redis_test
+    volumes:
+      - ./app:/app/app
+      - ./tests:/app/tests
+    networks:
+      - backend_test
+
+networks:
+  backend_test:
+
+volumes:
+  postgres_test_data:

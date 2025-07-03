@@ -14,6 +14,11 @@ class Settings:
     )
     DB_URL_SYNC: str = os.getenv("DATABASE_URL_SYNC", "sqlite:///./barbershop.db")
 
+    # Test database URL
+    TEST_DATABASE_URL: str = os.getenv(
+        "TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:"
+    )
+
     # JWT
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60 * 24)
