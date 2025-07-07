@@ -236,7 +236,21 @@ async def update_schedule(
 
     new_start = update_data.get("start_time", schedule.start_time)
     new_end = update_data.get("end_time", schedule.end_time)
-    schedule_date = update_data.get("data", schedule.date)
+    schedule_date = update_data.get("date", schedule.date)
+
+    if new_start >= new_end:
+        logger.warning(
+            "Start time is not earlier than end time",
+            extra={
+                "schedule_id": schedule_id,
+                "start": str(new_start),
+                "end": str(new_end),
+            },
+        )
+        raise HTTPException(
+            status_code=400,
+            detail="Start time must be earlier than end time",
+        )
 
     now = datetime.utcnow()
     schedule_start = datetime.combine(schedule_date, new_start)

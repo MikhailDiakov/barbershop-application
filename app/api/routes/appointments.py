@@ -7,7 +7,7 @@ from app.api.deps import get_current_user_info, get_current_user_optional, get_s
 from app.schemas.appointment import AppointmentCreate, AppointmentOut
 from app.schemas.barber import BarberOutwithReviews, BarberOutwithReviewsDetailed
 from app.schemas.barber_schedule import BarberWithScheduleAndReviewsOut
-from app.services.booking_service import (
+from app.services.appointment_service import (
     create_appointment_service,
     get_appointments_by_user,
     get_barber_detailed_info,

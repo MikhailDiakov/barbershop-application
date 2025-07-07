@@ -1,14 +1,6 @@
 version: "3.8"
 
 services:
-  redis_test:
-    image: redis:7-alpine
-    container_name: barbershop_redis_test
-    ports:
-      - "6379:6379"
-    networks:
-      - backend_test
-
   app_test:
     build:
       context: .
@@ -18,8 +10,7 @@ services:
       - .env
     environment:
       REDIS_URL: redis://barbershop_redis_test:6379/0
-    depends_on:
-      - redis_test
+      TEST_DATABASE_URL: sqlite+aiosqlite:///:memory
     volumes:
       - ./app:/app/app
       - ./tests:/app/tests
@@ -28,6 +19,3 @@ services:
 
 networks:
   backend_test:
-
-volumes:
-  postgres_test_data:

@@ -87,7 +87,10 @@ async def update_my_barber_profile(
     current_user=Depends(get_current_user_info),
 ):
     return await update_my_barber(
-        db, data, user_id=current_user["id"], role=current_user["role"]
+        db=db,
+        user_id=current_user["id"],
+        data=data,
+        role=current_user["role"],
     )
 
 
