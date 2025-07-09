@@ -7,11 +7,11 @@ from app.api.deps import get_current_user_info, get_session
 from app.schemas.user import PromoteUserToBarberRequest, UserRead, UserUpdateForAdmin
 from app.services.admin.users import (
     delete_user,
+    get_user_by_id_for_admin,
     get_users,
     promote_user_to_barber,
     update_user,
 )
-from app.utils.selectors.user import get_user_by_id
 
 router = APIRouter()
 
@@ -40,7 +40,7 @@ async def get_user(
     db: AsyncSession = Depends(get_session),
     current_user=Depends(get_current_user_info),
 ):
-    return await get_user_by_id(
+    return await get_user_by_id_for_admin(
         db,
         user_id,
         current_user["role"],

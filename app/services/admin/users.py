@@ -57,6 +57,39 @@ async def get_users(
     return users
 
 
+async def get_user_by_id_for_admin(
+    db: AsyncSession,
+    user_id: int,
+    user_role: str,
+    admin_id: int,
+) -> User:
+    ensure_admin(user_role)
+
+    logger.info(
+        "Fetching user by ID",
+        extra={
+            "role": user_role,
+            "admin_id": admin_id,
+            "target_user_id": user_id,
+        },
+    )
+
+    user = await get_user_by_id(db, user_id)
+
+    if not user:
+        logger.warning(
+            "User not found",
+            extra={"admin_id": admin_id, "user_id": user_id},
+        )
+        raise HTTPException(status_code=404, detail="User not found")
+
+    logger.info(
+        "User fetched",
+        extra={"admin_id": admin_id, "user_id": user.id},
+    )
+    return user
+
+
 async def update_user(
     db: AsyncSession,
     user_id: int,
@@ -194,7 +227,7 @@ async def promote_user_to_barber(
         raise HTTPException(status_code=404, detail="User not found")
 
     if user.role_id in (RoleEnum.ADMIN.value, RoleEnum.SUPERADMIN.value):
-        raise HTTPException(400, "Cannot promote Admin or SuperAdmin users to Barber")
+        raise HTTPException(403, "Cannot promote Admin or SuperAdmin users to Barber")
 
     if user.role_id == RoleEnum.BARBER.value:
         raise HTTPException(400, "User is already a barber")
