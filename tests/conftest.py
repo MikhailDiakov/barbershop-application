@@ -65,7 +65,11 @@ async def prepare_database():
         await session.flush()
 
         session.add(
-            Barber(user_id=users[2].id, full_name="Test Barber", avatar_url=None)
+            Barber(
+                user_id=users[2].id,
+                full_name="Test Barber",
+                avatar_url="https://fake-avatar_url",
+            )
         )
         await session.commit()
 

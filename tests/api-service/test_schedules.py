@@ -58,19 +58,15 @@ async def test_barber_cannot_create_schedule_in_past(barber_client):
 
 
 @pytest.mark.asyncio
-async def test_barber_cannot_create_overlapping_schedule(barber_client):
-    payload = {
-        "date": (date.today() + timedelta(days=1)).isoformat(),
-        "start_time": "09:00",
-        "end_time": "10:00",
-    }
-    res1 = await barber_client.post("/barber/schedules/", json=payload)
-    assert res1.status_code == 200
+async def test_barber_cannot_create_overlapping_schedule(
+    barber_schedule_factory, barber_client
+):
+    barber_schedule = await barber_schedule_factory()
 
     overlap_payload = {
-        "date": payload["date"],
-        "start_time": "09:30",
-        "end_time": "10:30",
+        "date": barber_schedule.date.isoformat(),
+        "start_time": "10:30",
+        "end_time": "11:30",
     }
     res2 = await barber_client.post("/barber/schedules/", json=overlap_payload)
     assert res2.status_code == 400

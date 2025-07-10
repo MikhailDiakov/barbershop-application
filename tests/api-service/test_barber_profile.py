@@ -52,10 +52,6 @@ async def test_delete_barber_avatar(
     )
     mock_delete_file_from_s3.return_value = None
 
-    files = {"file": ("avatar.jpg", b"fake image data", "image/jpeg")}
-    upload_res = await barber_client.post("/barber/avatar", files=files)
-    assert upload_res.status_code == 200
-
     res = await barber_client.delete("/barber/avatar")
     assert res.status_code == 200
     assert res.json() == {"detail": "Avatar deleted"}

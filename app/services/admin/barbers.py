@@ -205,7 +205,7 @@ async def upload_barber_photo(
         "Uploading barber photo",
         extra={
             "barber_id": barber_id,
-            "filename": file.filename,
+            "uploaded_filename": file.filename,
             "admin_role": user_role,
             "admin_id": admin_id,
         },
