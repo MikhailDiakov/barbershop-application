@@ -1,8 +1,34 @@
 from datetime import date, time, timedelta
 
 import pytest
+import pytest_asyncio
 
 from app.models.barberschedule import BarberSchedule
+
+
+@pytest_asyncio.fixture
+def barber_schedule_factory(db_session_with_rollback):
+    async def create_schedule(
+        barber_id: int = 1,
+        schedule_date: date = date.today() + timedelta(days=1),
+        start_time_: time = time(10, 0),
+        end_time_: time = time(11, 0),
+        is_active: bool = True,
+    ) -> BarberSchedule:
+        schedule = BarberSchedule(
+            barber_id=barber_id,
+            date=schedule_date,
+            start_time=start_time_,
+            end_time=end_time_,
+            is_active=is_active,
+        )
+        db_session_with_rollback.add(schedule)
+        await db_session_with_rollback.commit()
+        await db_session_with_rollback.refresh(schedule)
+        return schedule
+
+    return create_schedule
+
 
 schedule_create_payload = {
     "date": (date.today() + timedelta(days=1)).isoformat(),
@@ -52,41 +78,39 @@ async def test_barber_cannot_create_overlapping_schedule(barber_client):
 
 
 @pytest.mark.asyncio
-async def test_barber_can_get_own_schedules(barber_client):
-    create_res = await barber_client.post(
-        "/barber/schedules/", json=schedule_create_payload
-    )
-    assert create_res.status_code == 200, create_res.text
-
+async def test_barber_can_get_own_schedules_as_unit(
+    barber_schedule_factory, barber_client
+):
+    barber_schedule = await barber_schedule_factory()
     res = await barber_client.get("/barber/schedules/")
     assert res.status_code == 200
     data = res.json()
     assert isinstance(data, list)
-    assert len(data) >= 1
-    assert "start_time" in data[0]
-    assert "end_time" in data[0]
-    assert "date" in data[0]
+    assert any(
+        s["id"] == barber_schedule.id
+        and date.fromisoformat(s["date"]) == barber_schedule.date
+        and time.fromisoformat(s["start_time"]) == barber_schedule.start_time
+        and time.fromisoformat(s["end_time"]) == barber_schedule.end_time
+        for s in data
+    )
 
 
 @pytest.mark.asyncio
-async def test_barber_can_update_schedule(barber_client):
-    create_res = await barber_client.post(
-        "/barber/schedules/", json=schedule_create_payload
-    )
-    assert create_res.status_code == 200, create_res.text
-    schedule_id = create_res.json()["id"]
-
+async def test_barber_can_update_schedule_unit(barber_schedule_factory, barber_client):
+    barber_schedule = await barber_schedule_factory()
     update_payload = {
         "start_time": "12:00",
         "end_time": "13:00",
     }
+
     update_res = await barber_client.put(
-        f"/barber/schedules/{schedule_id}", json=update_payload
+        f"/barber/schedules/{barber_schedule.id}", json=update_payload
     )
-    assert update_res.status_code == 200
+    assert update_res.status_code == 200, update_res.text
     data = update_res.json()
     assert data["start_time"] == "12:00"
     assert data["end_time"] == "13:00"
+    assert data["id"] == barber_schedule.id
 
 
 @pytest.mark.asyncio
@@ -101,18 +125,13 @@ async def test_update_nonexistent_schedule(barber_client):
 
 
 @pytest.mark.asyncio
-async def test_update_schedule_to_past(barber_client):
-    future_date = (date.today() + timedelta(days=1)).isoformat()
-    valid_payload = {"date": future_date, "start_time": "10:00", "end_time": "11:00"}
-    create_res = await barber_client.post("/barber/schedules/", json=valid_payload)
-    assert create_res.status_code == 200
-    schedule_id = create_res.json()["id"]
-
+async def test_update_schedule_to_past_unit(barber_client, barber_schedule_factory):
+    barber_schedule = await barber_schedule_factory()
     past_date = (date.today() - timedelta(days=2)).isoformat()
     update_payload = {"date": past_date, "start_time": "01:00", "end_time": "02:00"}
 
     update_res = await barber_client.put(
-        f"/barber/schedules/{schedule_id}",
+        f"/barber/schedules/{barber_schedule.id}",
         json=update_payload,
     )
     assert update_res.status_code == 400
@@ -120,53 +139,53 @@ async def test_update_schedule_to_past(barber_client):
 
 
 @pytest.mark.asyncio
-async def test_update_schedule_with_overlap(barber_client):
-    future_date = (date.today() + timedelta(days=1)).isoformat()
-    payload1 = {"date": future_date, "start_time": "09:00", "end_time": "10:00"}
-    payload2 = {"date": future_date, "start_time": "11:00", "end_time": "12:00"}
-
-    res1 = await barber_client.post("/barber/schedules/", json=payload1)
-    res2 = await barber_client.post("/barber/schedules/", json=payload2)
-    assert res1.status_code == 200
-    assert res2.status_code == 200
-
-    second_id = res2.json()["id"]
+async def test_update_schedule_with_overlap(barber_schedule_factory, barber_client):
+    _ = await barber_schedule_factory(
+        start_time_=time(9, 0),
+        end_time_=time(10, 0),
+    )
+    schedule2 = await barber_schedule_factory(
+        start_time_=time(11, 0),
+        end_time_=time(12, 0),
+    )
 
     update_payload = {"start_time": "09:30", "end_time": "10:30"}
-    res = await barber_client.put(f"/barber/schedules/{second_id}", json=update_payload)
+    res = await barber_client.put(
+        f"/barber/schedules/{schedule2.id}",
+        json=update_payload,
+    )
+
     assert res.status_code == 400
-    assert "overlaps" in res.text.lower()
+    assert "overlap" in res.text.lower()
 
 
 @pytest.mark.asyncio
-async def test_update_schedule_invalid_times(barber_client):
-    future_date = (date.today() + timedelta(days=1)).isoformat()
-    valid_payload = {"date": future_date, "start_time": "10:00", "end_time": "11:00"}
-    res = await barber_client.post("/barber/schedules/", json=valid_payload)
-    assert res.status_code == 200
-    schedule_id = res.json()["id"]
+async def test_update_schedule_invalid_times(barber_schedule_factory, barber_client):
+    schedule = await barber_schedule_factory()
 
     update_payload = {"start_time": "14:00", "end_time": "13:00"}
+
     res = await barber_client.put(
-        f"/barber/schedules/{schedule_id}", json=update_payload
+        f"/barber/schedules/{schedule.id}",
+        json=update_payload,
     )
+
     assert res.status_code == 400
+    assert "end" in res.text.lower() or "start" in res.text.lower()
 
 
 @pytest.mark.asyncio
-async def test_barber_can_delete_schedule(barber_client):
-    create_res = await barber_client.post(
-        "/barber/schedules/", json=schedule_create_payload
-    )
-    assert create_res.status_code == 200, create_res.text
-    schedule_id = create_res.json()["id"]
+async def test_barber_can_delete_schedule(
+    barber_schedule_factory, barber_client, db_session_with_rollback
+):
+    schedule = await barber_schedule_factory()
 
-    res_delete = await barber_client.delete(f"/barber/schedules/{schedule_id}")
+    res_delete = await barber_client.delete(f"/barber/schedules/{schedule.id}")
     assert res_delete.status_code == 200
     assert res_delete.json()["detail"] == "Schedule deleted"
 
-    res_check = await barber_client.get("/barber/schedules/")
-    assert all(s["id"] != schedule_id for s in res_check.json())
+    deleted = await db_session_with_rollback.get(type(schedule), schedule.id)
+    assert deleted is None
 
 
 @pytest.mark.asyncio
@@ -177,17 +196,8 @@ async def test_delete_nonexistent_schedule(barber_client):
 
 
 @pytest.mark.asyncio
-async def test_delete_booked_schedule(barber_client, db_session_with_rollback):
-    schedule = BarberSchedule(
-        barber_id=1,
-        date=date.today() + timedelta(days=1),
-        start_time=time(10, 0),
-        end_time=time(11, 0),
-        is_active=False,
-    )
-    db_session_with_rollback.add(schedule)
-    await db_session_with_rollback.commit()
-    await db_session_with_rollback.refresh(schedule)
+async def test_delete_booked_schedule(barber_client, barber_schedule_factory):
+    schedule = await barber_schedule_factory(is_active=False)
 
     res_delete = await barber_client.delete(f"/barber/schedules/{schedule.id}")
     assert res_delete.status_code == 400

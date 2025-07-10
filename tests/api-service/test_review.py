@@ -1,4 +1,8 @@
+from datetime import datetime
+
 import pytest
+
+from app.models import Review
 
 
 @pytest.mark.asyncio
@@ -64,19 +68,26 @@ async def test_create_review_rating_too_high(authorized_client):
 
 
 @pytest.mark.asyncio
-async def test_get_my_reviews(authorized_client):
-    review_res = await authorized_client.post(
-        "/review/",
-        json={
-            "barber_id": 1,
-            "rating": 4,
-            "comment": "Nice but could be better",
-        },
-    )
-    assert review_res.status_code == 200
+async def test_get_my_reviews_with_direct_db_insert(
+    authorized_client, db_session_with_rollback
+):
+    client_id = 4
+    barber_id = 1
 
-    res = await authorized_client.get("/review/my-reviews/")
-    assert res.status_code == 200
-    reviews = res.json()
+    review = Review(
+        client_id=client_id,
+        barber_id=barber_id,
+        rating=4,
+        comment="Nice but could be better",
+        is_approved=True,
+        created_at=datetime.utcnow(),
+    )
+    db_session_with_rollback.add(review)
+    await db_session_with_rollback.commit()
+
+    response = await authorized_client.get("/review/my-reviews/")
+    assert response.status_code == 200
+
+    reviews = response.json()
     assert isinstance(reviews, list)
     assert any(r["comment"] == "Nice but could be better" for r in reviews)
