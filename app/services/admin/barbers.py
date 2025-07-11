@@ -433,6 +433,19 @@ async def admin_update_schedule_service(
     end_time = trim_time(update_data.get("end_time", schedule.end_time))
     barber_id = update_data.get("barber_id", schedule.barber_id)
 
+    if start_time >= end_time:
+        logger.warning(
+            "Start time is not earlier than end time",
+            extra={
+                "schedule_id": schedule_id,
+                "start": str(start_time),
+                "end": str(end_time),
+            },
+        )
+        raise HTTPException(
+            status_code=400,
+            detail="Start time must be earlier than end time",
+        )
     schedule_start = datetime.combine(date, start_time)
     if schedule_start < datetime.utcnow():
         logger.warning(
