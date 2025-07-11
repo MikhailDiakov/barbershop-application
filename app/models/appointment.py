@@ -22,3 +22,4 @@ class Appointment(Base):
     barber = relationship(
         "Barber", foreign_keys=[barber_id], back_populates="appointments"
     )
+    schedule = relationship("BarberSchedule", backref="appointments")
