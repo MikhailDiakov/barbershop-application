@@ -212,3 +212,39 @@ async def test_admin_cannot_delete_booked_schedule(
     response = await admin_client.delete(f"/admin/barbers/schedules/{schedule.id}")
     assert response.status_code == 400
     assert "Cannot delete schedule" in response.text
+
+
+@pytest.mark.asyncio
+async def test_non_admin_cannot_access_schedule_endpoints(
+    authorized_client, barber_client
+):
+    async def check_schedule_access_denied(client):
+        res = await client.get("/admin/barbers/schedules/")
+        assert res.status_code == 403
+
+        res = await client.get(
+            f"/admin/barbers/schedules/?barber_id=1&start_date={date.today()}&end_date={date.today()}"
+        )
+        assert res.status_code == 403
+
+        payload = {
+            "barber_id": 1,
+            "date": (date.today() + timedelta(days=1)).isoformat(),
+            "start_time": "10:00",
+            "end_time": "11:00",
+            "is_active": True,
+        }
+        res = await client.post("/admin/barbers/schedules/", json=payload)
+        assert res.status_code == 403
+
+        res = await client.put(
+            "/admin/barbers/schedules/1",
+            json={"start_time": "09:00", "end_time": "10:00"},
+        )
+        assert res.status_code == 403
+
+        res = await client.delete("/admin/barbers/schedules/1")
+        assert res.status_code == 403
+
+    await check_schedule_access_denied(authorized_client)
+    await check_schedule_access_denied(barber_client)

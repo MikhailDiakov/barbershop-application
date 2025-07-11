@@ -210,3 +210,30 @@ async def test_admin_delete_appointment_missing_schedule(
     res = await admin_client.delete(f"/admin/appointments/{appointment.id}")
     assert res.status_code == 404
     assert "appointment not found" in res.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_non_admin_cannot_access_appointment_admin_routes(
+    authorized_client, barber_client, appointment, barber_schedule
+):
+    async def check(client):
+        res = await client.get("/admin/appointments/")
+        assert res.status_code == 403
+        assert "only admins" in res.json()["detail"].lower()
+
+        payload = {
+            "barber_id": barber_schedule.barber_id,
+            "schedule_id": barber_schedule.id,
+            "client_name": "Blocked User",
+            "client_phone": "+0000000000",
+        }
+        res = await client.post("/admin/appointments/", json=payload)
+        assert res.status_code == 403
+        assert "only admins" in res.json()["detail"].lower()
+
+        res = await client.delete(f"/admin/appointments/{appointment.id}")
+        assert res.status_code == 403
+        assert "only admins" in res.json()["detail"].lower()
+
+    await check(authorized_client)
+    await check(barber_client)

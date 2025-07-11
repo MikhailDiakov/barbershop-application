@@ -187,6 +187,15 @@ async def test_non_admin_cannot_access_admin_endpoints(
             res_delete.json()["detail"]
             == "Access denied: only admins can perform this action"
         )
+        res_promote = await client.post(
+            f"/admin/users/{user_id}/promote-to-barber",
+            json={"full_name": "Access Denied"},
+        )
+        assert res_promote.status_code == 403
+        assert (
+            res_delete.json()["detail"]
+            == "Access denied: only admins can perform this action"
+        )
 
     await check_non_admin_access(authorized_client)
     await check_non_admin_access(barber_client)

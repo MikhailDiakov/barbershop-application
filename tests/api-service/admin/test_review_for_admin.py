@@ -125,3 +125,26 @@ async def test_admin_delete_nonexistent_review(admin_client):
 
     assert res.status_code == 404
     assert "not found" in res.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_non_admin_cannot_access_review_endpoints(
+    authorized_client, barber_client, two_reviews
+):
+    review_id = two_reviews["approved"].id
+
+    async def check(client):
+        res = await client.get("/admin/reviews/")
+        assert res.status_code == 403
+        assert "only admins" in res.json()["detail"].lower()
+
+        res = await client.post(f"/admin/reviews/{review_id}/approve")
+        assert res.status_code == 403
+        assert "only admins" in res.json()["detail"].lower()
+
+        res = await client.delete(f"/admin/reviews/{review_id}")
+        assert res.status_code == 403
+        assert "only admins" in res.json()["detail"].lower()
+
+    await check(authorized_client)
+    await check(barber_client)

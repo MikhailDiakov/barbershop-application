@@ -33,10 +33,10 @@ async def get_admin(
     current_user=Depends(get_current_user_info),
 ):
     return await get_admin_by_id(
-        db,
-        admin_id,
-        current_user["role"],
-        admin_id=current_user["id"],
+        db=db,
+        admin_id=admin_id,
+        current_user_role=current_user["role"],
+        requester_id=current_user["id"],
     )
 
 
