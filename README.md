@@ -78,7 +78,6 @@ Superadmins can:
 ## 📦 Requirements
 
 - [Docker](https://www.docker.com/)
-- [uv](https://docs.astral.sh/uv/) – Modern Python package and environment manager
 
 ---
 
