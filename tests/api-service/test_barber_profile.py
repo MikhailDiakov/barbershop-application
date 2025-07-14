@@ -21,6 +21,28 @@ async def test_update_my_barber_profile(barber_client):
     assert data["full_name"] == "Updated Barber Name"
 
 
+@pytest.mark.asyncio
+async def test_update_barber_full_name_too_short(barber_client):
+    update_payload = {"full_name": "Jo"}
+    res = await barber_client.put("/barber/me", json=update_payload)
+    assert res.status_code == 422
+    assert (
+        "Full name must be at least 3 characters" in res.text
+        or "value_error" in res.text
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_barber_full_name_invalid_chars(barber_client):
+    update_payload = {"full_name": "John123!"}
+    res = await barber_client.put("/barber/me", json=update_payload)
+    assert res.status_code == 422
+    assert (
+        "Full name must contain only letters and spaces" in res.text
+        or "value_error" in res.text
+    )
+
+
 @patch("app.services.barber_service.upload_file_to_s3", new_callable=AsyncMock)
 @patch("app.services.barber_service.delete_file_from_s3", new_callable=AsyncMock)
 @pytest.mark.asyncio

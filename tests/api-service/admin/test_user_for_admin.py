@@ -120,6 +120,13 @@ async def test_admin_cannot_delete_admin_user(admin_client):
 
 
 @pytest.mark.asyncio
+async def test_admin_cannot_delete_admin(admin_client):
+    user_id = 1
+    response = await admin_client.delete(f"/admin/users/{user_id}")
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
 async def test_admin_can_promote_user_to_barber(admin_client):
     user_id = 4
     response = await admin_client.post(

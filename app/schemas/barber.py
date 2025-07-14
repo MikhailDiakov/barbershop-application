@@ -1,3 +1,4 @@
+import re
 from typing import List, Optional
 
 from pydantic import BaseModel, field_validator
@@ -55,9 +56,12 @@ class BarberUpdate(BaseModel):
 
     @field_validator("full_name")
     def name_valid(cls, v: str) -> str:
-        if len(v.strip()) < 2:
-            raise ValueError("Full name must be at least 2 characters")
-        return v.strip()
+        v = v.strip()
+        if len(v) < 3:
+            raise ValueError("Full name must be at least 3 characters long")
+        if not re.fullmatch(r"[^\W\d_]+(?: [^\W\d_]+)*", v, re.UNICODE):
+            raise ValueError("Full name must contain only letters and spaces")
+        return v
 
 
 class BarberOutwithReviewsDetailed(BaseModel):
@@ -69,4 +73,5 @@ class BarberOutwithReviewsDetailed(BaseModel):
     reviews: List[ReviewReadForBarber]
 
     class Config:
+        from_attributes = True
         from_attributes = True

@@ -37,11 +37,32 @@ async def test_promote_to_admin(super_admin_client):
 
 
 @pytest.mark.asyncio
+async def test_cannot_promote_self(super_admin_client):
+    res = await super_admin_client.post("/superadmin/users/1/promote")
+    assert res.status_code == 403 or res.status_code == 400
+    assert "cannot promote" in res.text.lower() or "forbidden" in res.text.lower()
+
+
+@pytest.mark.asyncio
 async def test_demote_from_admin(super_admin_client):
     res = await super_admin_client.post("/superadmin/users/2/demote")
     assert res.status_code == 200
     data = res.json()
     assert data["role_id"] == 3
+
+
+@pytest.mark.asyncio
+async def test_cannot_demote_barber(super_admin_client):
+    res = await super_admin_client.post("/superadmin/users/3/demote")
+    assert res.status_code == 403 or res.status_code == 400
+    assert "user is not an admin" in res.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_cannot_demote_self(super_admin_client):
+    res = await super_admin_client.post("/superadmin/users/1/demote")
+    assert res.status_code == 403 or res.status_code == 400
+    assert "cannot demote" in res.text.lower() or "forbidden" in res.text.lower()
 
 
 @pytest.mark.asyncio
